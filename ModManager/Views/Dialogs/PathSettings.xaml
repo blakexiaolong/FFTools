@@ -1,0 +1,26 @@
+﻿<Window x:Class="ModManager.Views.Dialogs.PathSettings"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ModManager.Views.Dialogs"
+        mc:Ignorable="d"
+        Title="Path Settings" Height="256.014" Width="600" ResizeMode="NoResize">
+    <Grid>
+        <TextBlock TextWrapping="Wrap" Text="Mod Import Directory" VerticalAlignment="Top" Margin="10,10,10,0" Height="18"/>
+        <TextBlock Margin="10,62,41,0" TextWrapping="Wrap" Text="Mod Export Directory" VerticalAlignment="Top" Height="18"/>
+        <TextBlock Margin="10,114,41,0" TextWrapping="Wrap" Text="Preset File Location" VerticalAlignment="Top" Height="18"/>
+
+        <TextBox Margin="10,33,41,0" TextWrapping="Wrap" Name="ModImportPathBox" VerticalAlignment="Top" Height="24"/>
+        <TextBox Margin="10,85,41,0" TextWrapping="Wrap" Name="ModExportPathBox" VerticalAlignment="Top" Height="24"/>
+        <TextBox Margin="10,137,41,0" TextWrapping="Wrap" Name="PresetFileLocationBox" VerticalAlignment="Top" Height="24"/>
+
+        <Button Content="..." Margin="558,33,10,0" Click="BrowseModImportButton_Click" VerticalAlignment="Top" Height="24"/>
+        <Button Content="..." Margin="558,85,10,0" Click="BrowseModExportButton_Click" VerticalAlignment="Top" Height="24"/>
+        <Button Content="..." Margin="558,137,10,0" Click="BrowsePresetFileButton_Click" VerticalAlignment="Top" Height="24"/>
+
+        <Button Content="Cancel" Margin="10,0,0,10" HorizontalAlignment="Left" Width="125" Click="CancelSettingsButton_Click" Height="20" VerticalAlignment="Bottom"/>
+        <Button Content="Save" Margin="0,0,10,10" HorizontalAlignment="Right" Width="113" Click="SaveSettingsButton_Click" Height="20" VerticalAlignment="Bottom"/>
+
+    </Grid>
+</Window>
