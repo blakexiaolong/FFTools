@@ -42,7 +42,14 @@ namespace ModManager
         }
         private void SavePresetButton_Click(object sender, RoutedEventArgs e)
         {
-            Model.SavePresets();
+            bool writeFiles = true;
+            if (File.Exists(Properties.Settings.Default.PresetFilePath))
+            {
+                writeFiles = MessageBox.Show("Preset files already exist, do you really want to overrwite it?",
+                    "Really overwrite preset files?", MessageBoxButton.YesNo, MessageBoxImage.Exclamation, MessageBoxResult.No)
+                    == MessageBoxResult.Yes;
+            }
+            if (writeFiles) Model.SavePresets();
         }
         private void LoadPresetButton_Click(object sender, RoutedEventArgs e)
         {
@@ -66,10 +73,7 @@ namespace ModManager
             }
             else if (Model.Mods.Any(x => x.HasConflict) && MessageBoxResult.Yes != MessageBox.Show(
                 "There are conflicting mods selected. Are you sure about your selection?",
-                "Conflicting Mods Selected", MessageBoxButton.YesNo, MessageBoxImage.Exclamation, MessageBoxResult.No))
-            {
-
-            }
+                "Conflicting Mods Selected", MessageBoxButton.YesNo, MessageBoxImage.Exclamation, MessageBoxResult.No)) { }
             else Model.ExportMods();
         }
 
@@ -91,15 +95,27 @@ namespace ModManager
                 TreeViewItem categoryItem = new TreeViewItem { Header = category.Key };
                 foreach (var item in category.Value)
                 {
-                    TreeViewItem itemItem = new TreeViewItem { Header = item.Key };
+                    TreeViewItem categorySubItem = new TreeViewItem { Header = item.Key };
                     foreach (var mod in item.Value)
                     {
-                        itemItem.Items.Add(new TreeViewItem { Header = mod.Name });
+                        categorySubItem.Items.Insert(GetInsertIndex(categorySubItem.Items, mod.Name), new TreeViewItem { Header = mod.Name });
                     }
-                    categoryItem.Items.Add(itemItem);
+                    categoryItem.Items.Insert(GetInsertIndex(categoryItem.Items, item.Key), categorySubItem);
                 }
-                CategoryTreeView.Items.Add(categoryItem);
+                CategoryTreeView.Items.Insert(GetInsertIndex(CategoryTreeView.Items, category.Key), categoryItem);
             }
+        }
+
+        private int GetInsertIndex(ItemCollection collection, string key)
+        {
+            int index = collection.Count;
+            for (int i = 0; i < collection.Count; i++)
+            {
+                if (string.Compare((string)(collection[i] as TreeViewItem).Header, key) < 0) continue;
+                index = i;
+                break;
+            }
+            return index;
         }
     }
 }
