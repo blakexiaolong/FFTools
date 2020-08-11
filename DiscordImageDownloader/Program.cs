@@ -14,14 +14,25 @@ namespace DiscordImageDownloader
         public const int PAUSE_COUNT = 10;
         public const int PAUSE_MS = 200;
 
-        public const string IMAGE_IN_PATH = @"C:\Users\Andrew\Downloads\discord-image-downloader\image-input";
-        public const string IMAGE_OUT_PATH = @"C:\Users\Andrew\Downloads\discord-image-downloader\image-output";
+        public const string IMAGE_IN_PATH = @"D:\Pictures\discord-image-downloader\image-input";
+        public const string IMAGE_OUT_PATH = @"D:\Pictures\discord-image-downloader\image-output";
 
-        public const string POSE_IN_PATH = @"C:\Users\Andrew\Downloads\discord-image-downloader\pose-input";
-        public const string POSE_OUT_PATH = @"C:\Users\Andrew\Downloads\discord-image-downloader\pose-output";
+        public const string POSE_IN_PATH = @"D:\Pictures\discord-image-downloader\pose-input";
+        public const string POSE_OUT_PATH = @"D:\Pictures\discord-image-downloader\pose-output";
 
         static void Main()
         {
+            SaveNodes(IMAGE_IN_PATH, IMAGE_OUT_PATH, "//*[@class=\"chatlog__attachment\"]//a//img", (counter, countersUsed, majorInterval, mult, client, folder, nodes) =>
+            {
+                int ct = 0;
+                foreach (var tag in nodes)
+                {
+                    HandleCounter(ref counter, ref countersUsed, ref majorInterval, mult);
+                    DownloadFiles(client, folder, tag, "src", ref ct);
+                }
+                return counter;
+            });
+
             SaveNodes(POSE_IN_PATH, POSE_OUT_PATH, "//*[@class=\"chatlog__message \"]", (counter, countersUsed, majorInterval, mult, client, folder, nodes) =>
             {
                 int ct = 0;
@@ -31,7 +42,6 @@ namespace DiscordImageDownloader
                     HandleCounter(ref counter, ref countersUsed, ref majorInterval, mult);
 
                     HtmlNode markdown = tag.SelectSingleNode("div[@class=\"chatlog__content\"]//div[@class=\"markdown\"]");
-
                     if (markdown.InnerText.Contains(@"Name:"))
                     {
                         string startString = "Name:";
@@ -59,7 +69,7 @@ namespace DiscordImageDownloader
                     {
                         foreach (var link in attachments)
                         {
-                            DownloadFiles(client, poseFolder, link, ref ct);
+                            DownloadFiles(client, poseFolder, link, "href", ref ct);
                         }
                     }
                 }
@@ -81,9 +91,9 @@ namespace DiscordImageDownloader
             counter++;
         }
 
-        static void DownloadFiles(WebClient client, string folder, HtmlNode link, ref int ct)
+        static void DownloadFiles(WebClient client, string folder, HtmlNode link, string attributeName, ref int ct)
         {
-            foreach (var attribute in link.Attributes.AttributesWithName("href"))
+            foreach (var attribute in link.Attributes.AttributesWithName(attributeName))
             {
                 string[] splits = attribute.Value.Split('/');
                 string filePath = Path.Combine(folder, $"{splits[^2]}-{splits[^1]}");
@@ -109,8 +119,9 @@ namespace DiscordImageDownloader
             Console.WriteLine($"{fileNames.Count()} files found");
             foreach (string fileName in fileNames)
             {
-                Console.WriteLine(Path.GetFileNameWithoutExtension(fileName));
-                string fileFolder = Path.Combine(outPath, Path.GetFileNameWithoutExtension(fileName));
+                string folderName = GetFolderName(fileName);
+                Console.WriteLine(Path.GetFileNameWithoutExtension(folderName));
+                string fileFolder = Path.Combine(outPath, Path.GetFileNameWithoutExtension(folderName));
                 Directory.CreateDirectory(fileFolder);
 
                 HtmlDocument html = new HtmlDocument();
@@ -125,6 +136,12 @@ namespace DiscordImageDownloader
                 tagHandler.Invoke(counter, countersUsed, majorInterval, mult, client, fileFolder, nodes);
                 Console.WriteLine("");
             }
+        }
+
+        static string GetFolderName(string fileName)
+        {
+            string[] splits = fileName.Split(']');
+            return string.Join(']', splits.Take(splits.Length - 1));
         }
     }
 }
