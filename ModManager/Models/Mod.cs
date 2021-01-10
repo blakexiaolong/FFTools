@@ -1,11 +1,17 @@
-﻿using Newtonsoft.Json;
+﻿using MyToolkit.WorkflowEngine;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows.Media.Imaging;
 
 namespace ModManager.Models
 {
+    public enum ModCategory
+    {
+        Unknown
+    }
     public class Mod : INotifyPropertyChanged
     {
         private bool _isEnabled;
@@ -55,12 +61,14 @@ namespace ModManager.Models
 
         [JsonProperty(PropertyName = "Name")]
         public string Name { get; set; }
+        public ModCategory Category { get; set; }
         [JsonProperty(PropertyName = "Author")]
         public string Author { get; set; }
         [JsonProperty(PropertyName = "Version")]
         public string Version { get; set; }
         [JsonProperty(PropertyName = "Description")]
         public string Description { get; set; }
+        public BitmapImage Image { get; set; }
         public string TagsFromFolder { get; set; }
         [JsonProperty(PropertyName = "SimpleModsList")]
         public SimpleModItem[] SimpleModsList { get; set; }
@@ -157,6 +165,19 @@ namespace ModManager.Models
             }
         }
 
+        public class OutputMod
+        {
+            public string Name { get; set; }
+            public ModCategory Category { get; set; }
+            public bool IsEnabled { get; set; }
+        }
+        public OutputMod GetOutputMod() => new OutputMod
+        {
+            Name = Name,
+            Category = Category,
+            IsEnabled = IsEnabled
+        };
+        
         private void AddToAlteredItemsList(IEnumerable<string> itemNames, IEnumerable<SimpleModItem> modItems)
         {
             foreach (string itemName in itemNames)

@@ -87,6 +87,11 @@ namespace ModManager
             Model.DisableAllMods();
         }
 
+        private void DownloadButton_Click(object sender, RoutedEventArgs e)
+        {
+            new ModImporter().Show();
+        }
+
         private void CategoryView_GotFocus(object sender, RoutedEventArgs e)
         {
             CategoryTreeView.Items.Clear();

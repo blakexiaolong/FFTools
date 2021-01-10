@@ -9,6 +9,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel;
+using ModManager.Views.Dialogs;
+using System.Windows.Media.Imaging;
 
 namespace ModManager.ViewModels
 {
@@ -96,18 +98,18 @@ namespace ModManager.ViewModels
             EnableForms = false;
             Status = "Loading Presets";
             int foundModsCount = 0;
-            string[] enabledModNames = JsonConvert.DeserializeObject<string[]>(File.ReadAllText(Properties.Settings.Default.PresetFilePath));
-            if (enabledModNames != null)
+            List<OutputMod> presetMods = JsonConvert.DeserializeObject<OutputMod[]>(File.ReadAllText(Properties.Settings.Default.PresetFilePath)).ToList();
+            if (presetMods != null)
             {
                 Progress = 0;
-                ProgressMax = enabledModNames.Length;
-                foreach (string name in enabledModNames)
+                ProgressMax = presetMods.Count;
+                foreach (OutputMod mod in presetMods)
                 {
-                    Mod foundMod = _mods.FirstOrDefault(x => x.Name.Equals(name));
+                    Mod foundMod = _mods.FirstOrDefault(x => x.Name == mod.Name);
                     if (foundMod == default) continue;
                     else
                     {
-                        foundMod.IsEnabled = true;
+                        foundMod.IsEnabled = mod.IsEnabled;
                         Mods.Remove(foundMod);
                         Mods.Insert(foundModsCount, foundMod);
                     }
@@ -115,6 +117,13 @@ namespace ModManager.ViewModels
                     Progress++;
                 }
                 ScanForConflicts();
+
+                List<Mod> newMods = Mods.Where(m => presetMods.FirstOrDefault(x => x.Name == m.Name) == default(OutputMod)).ToList();
+                for(int i = 0; i < newMods.Count(); i++)
+                {
+                    new NewModSelector(newMods[i], i + 1, newMods.Count).ShowDialog();
+                    if (newMods[i].IsEnabled) GetModConflicts();
+                }
             }
             Status = "Presets Loaded";
             EnableForms = true;
@@ -125,7 +134,7 @@ namespace ModManager.ViewModels
             Status = "Saving Presets";
             Progress = 0;
             ProgressMax = 1;
-            string presetData = JsonConvert.SerializeObject(_mods.Where(x => x.IsEnabled).Select(x => x.Name));
+            string presetData = JsonConvert.SerializeObject(_mods.Select(x => x.GetOutputMod()));
             Directory.CreateDirectory(Path.GetDirectoryName(Properties.Settings.Default.PresetFilePath));
             File.WriteAllText(Properties.Settings.Default.PresetFilePath, presetData);
             Status = "Presets Saved";
@@ -205,13 +214,44 @@ namespace ModManager.ViewModels
                                 string fileName = file.Split(Path.DirectorySeparatorChar).Last();
                                 int fileSplits = file.Split('.').Count();
                                 string[] folderTags = file.Split(Path.DirectorySeparatorChar);
-                                Mod mod = new Mod
+
+                                string modName = string.Join(".", fileName.Split('.').Take(fileSplits - 1));
+                                string tagsFromFolder = string.Join(", ", folderTags.Take(folderTags.Length - 1).Except(filePath.Split(Path.DirectorySeparatorChar)));
+                                string readFile = reader.ReadToEnd();
+                                string replacedFile = readFile.Replace("\n", "\n,").Trim(',');
+                                string imagePath = Directory.GetFiles(Path.GetDirectoryName(file)).Where(x => Path.GetFileNameWithoutExtension(file) == "0").FirstOrDefault();
+
+                                Mod mod;
+                                try
                                 {
-                                    Name = string.Join(".", fileName.Split('.').Take(fileSplits - 1)),
-                                    FullPath = file,
-                                    TagsFromFolder = string.Join(", ", folderTags.Take(folderTags.Length - 1).Except(filePath.Split(Path.DirectorySeparatorChar))),
-                                    SimpleModsList = JsonConvert.DeserializeObject<SimpleModItem[]>($"[{reader.ReadToEnd().Replace("\n", "\n,")}]"),
-                                };
+                                    mod = new Mod
+                                    {
+                                        Name = modName,
+                                        FullPath = file,
+                                        TagsFromFolder = tagsFromFolder,
+                                        SimpleModsList = JsonConvert.DeserializeObject<Mod>(replacedFile).SimpleModsList,
+                                    };
+
+                                    if (imagePath != default)
+                                    {
+                                        mod.Image = new BitmapImage(new Uri(imagePath));
+                                    }
+                                }
+                                catch
+                                {
+                                    mod = new Mod
+                                    {
+                                        Name = modName,
+                                        FullPath = file,
+                                        TagsFromFolder = tagsFromFolder,
+                                        SimpleModsList = JsonConvert.DeserializeObject<SimpleModItem[]>($"[{replacedFile}]"),
+                                    };
+
+                                    if (imagePath != default)
+                                    {
+                                        mod.Image = new BitmapImage(new Uri(imagePath));
+                                    }
+                                }
                                 mod.SaveAlteredItemsList();
                                 Mods.Add(mod);
                                 Progress++;
