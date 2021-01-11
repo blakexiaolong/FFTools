@@ -1,5 +1,7 @@
-﻿using ModManager.ViewModels;
+﻿using ModManager.Models;
+using ModManager.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media.Imaging;
 
@@ -30,9 +32,8 @@ namespace ModManager.Views.Dialogs
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.ModImport(FolderSelector.SelectedIndex);
-            //new NewModSelector(newMods[i], 1, 1).ShowDialog();
-            //if (newMods[i].IsEnabled) GetModConflicts();
+            List<Mod> mods = _viewModel.ModImport(FolderSelector.SelectedIndex);
+            new NewModSelector(mods, () => { }).ShowDialog();
         }
     }
 }

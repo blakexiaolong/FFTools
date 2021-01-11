@@ -17,6 +17,7 @@ namespace ModManager
         {
             InitializeComponent();
             Model.UpdateSettings();
+            Model.ImportMods();
         }
 
         public ModListPageModel Model
@@ -90,6 +91,7 @@ namespace ModManager
         private void DownloadButton_Click(object sender, RoutedEventArgs e)
         {
             new ModImporter().Show();
+            Model.GetModConflicts();
         }
 
         private void CategoryView_GotFocus(object sender, RoutedEventArgs e)

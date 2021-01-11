@@ -55,7 +55,7 @@ namespace ModManager.Models
                             : x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value);
             }
         }
-        public void Import(string dirPath)
+        public List<Mod> Import(string dirPath)
         {
             Directory.CreateDirectory(dirPath);
             string filesPath = Path.Combine(dirPath, Name);
@@ -73,6 +73,20 @@ namespace ModManager.Models
                 DownloadFiles(client, filesPath, Files, false);
                 DownloadFiles(client, filesPath, OtherFiles, true);
             }
+
+            string[] ttmpFiles = Directory.GetFiles(filesPath, "*.ttmp", SearchOption.AllDirectories);
+            string[] ttmp2Files = Directory.GetFiles(filesPath, "*.ttmp2", SearchOption.AllDirectories);
+
+            List<Mod> importedMods = new List<Mod>();
+            List<string> files = ttmpFiles.Concat(ttmp2Files).ToList();
+            foreach(string file in files)
+            {
+                Mod mod = new Mod();
+                mod.ImportFromFile(file);
+                importedMods.Add(mod);
+            }
+
+            return importedMods;
         }
 
         private void DownloadFiles(WebClient client, string filesPath, Dictionary<string, string> files, bool showBox)

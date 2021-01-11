@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 using ModManager.Views.Dialogs;
 using System.Windows.Media.Imaging;
+using System.ComponentModel;
+using System.Threading;
 
 namespace ModManager.ViewModels
 {
@@ -29,8 +31,7 @@ namespace ModManager.ViewModels
 
         public ModListPageModel()
         {
-            if (Directory.Exists(Properties.Settings.Default.ModImportPath)) ImportMods();
-            else EnableForms = true;
+            EnableForms = true;
         }
 
         public ObservableCollection<Mod> Mods
@@ -38,6 +39,7 @@ namespace ModManager.ViewModels
             get => _mods;
             set => Set(ref _mods, value);
         }
+
         public Dictionary<string, Dictionary<string, List<Mod>>> CategoryTreeMods
         {
             get
@@ -118,13 +120,16 @@ namespace ModManager.ViewModels
                 }
                 ScanForConflicts();
 
-                List<Mod> newMods = Mods.Where(m => presetMods.FirstOrDefault(x => x.Name == m.Name) == default(OutputMod)).ToList();
-                for(int i = 0; i < newMods.Count(); i++)
+                string n = string.Join("\n", Mods.Select(x => x.Name));
+                string p = string.Join("\n", presetMods.Select(x => x.Name));
+
+                List<Mod> newMods = Mods.Where(m => !p.Contains(m.Name)).ToList();
+                if (newMods.Any())
                 {
-                    new NewModSelector(newMods[i], i + 1, newMods.Count).ShowDialog();
-                    if (newMods[i].IsEnabled) GetModConflicts();
+                    new NewModSelector(newMods, () => GetModConflicts()).ShowDialog();
                 }
             }
+            Progress = ProgressMax;
             Status = "Presets Loaded";
             EnableForms = true;
         }
@@ -162,103 +167,46 @@ namespace ModManager.ViewModels
             EnableForms = false;
             Status = "Importing Mods";
 
-            Mods.Clear();
-            LoadModsFromFile(Properties.Settings.Default.ModImportPath);
-            GetModConflicts();
+            if (Directory.Exists(Properties.Settings.Default.ModImportPath))
+            {
+                var context = SynchronizationContext.Current;
+                BackgroundWorker worker = new BackgroundWorker();
+                worker.DoWork += new DoWorkEventHandler(ImportModsWorker);
+                worker.WorkerReportsProgress = true;
+                worker.WorkerSupportsCancellation = true;
+                worker.RunWorkerAsync(context);
+            }
+            else
+            {
+                Status = "Mod Path does not exist";
+            }
 
-            Status = $"{Mods.Count()} Mods Imported";
             EnableForms = true;
         }
-        public void LoadModsFromFile(string filePath)
+        private void ImportModsWorker(object sender, DoWorkEventArgs e)
         {
-            Progress = 0;
+            var context = (SynchronizationContext)e.Argument;
+            context.Send(x => Mods.Clear(), null);
+            LoadModsFromFile(Properties.Settings.Default.ModImportPath, context);
+            GetModConflicts();
+            context.Send(x => Status = $"{Mods.Count()} Mods Imported", null);
+        }
+        public void LoadModsFromFile(string filePath, SynchronizationContext context)
+        {
+            context.Send(x => Progress = 0, null);
             IEnumerable<string> ttmp2files = Directory.EnumerateFiles(filePath, "*.ttmp2", SearchOption.AllDirectories);
             IEnumerable<string> ttmpfiles = Directory.EnumerateFiles(filePath, "*.ttmp", SearchOption.AllDirectories);
-            ProgressMax = ttmp2files.Count() + ttmpfiles.Count();
 
-            foreach (string file in Directory.EnumerateFiles(filePath, "*.ttmp2", SearchOption.AllDirectories))
+            List<string> files = ttmpfiles.Concat(ttmp2files).ToList();
+            context.Send(x => ProgressMax = files.Count, null);
+            files.Sort();
+
+            foreach (string file in files)
             {
-                using (ZipArchive archive = ZipFile.OpenRead(file))
-                {
-                    foreach (ZipArchiveEntry entry in archive.Entries)
-                    {
-                        if (entry.Name.EndsWith(".mpl"))
-                        {
-                            using (StreamReader reader = new StreamReader(entry.Open()))
-                            {
-                                Mod mod = JsonConvert.DeserializeObject<Mod>(reader.ReadToEnd());
-                                string fileName = file.Split(Path.DirectorySeparatorChar).Last();
-                                int fileSplits = file.Split('.').Count();
-                                mod.Name = string.Join(".", fileName.Split('.').Take(fileSplits - 1));
-                                mod.FullPath = file;
-                                string[] folderTags = file.Split(Path.DirectorySeparatorChar);
-                                mod.TagsFromFolder = string.Join(", ", folderTags.Take(folderTags.Length - 1).Except(filePath.Split(Path.DirectorySeparatorChar)));
-                                mod.SaveAlteredItemsList();
-                                Mods.Add(mod);
-                                Progress++;
-                            }
-                        }
-                    }
-                }
-            }
-            foreach (string file in Directory.EnumerateFiles(filePath, "*.ttmp", SearchOption.AllDirectories))
-            {
-                using (ZipArchive archive = ZipFile.OpenRead(file))
-                {
-                    foreach (ZipArchiveEntry entry in archive.Entries)
-                    {
-                        if (entry.Name.EndsWith(".mpl"))
-                        {
-                            using (StreamReader reader = new StreamReader(entry.Open()))
-                            {
-                                string fileName = file.Split(Path.DirectorySeparatorChar).Last();
-                                int fileSplits = file.Split('.').Count();
-                                string[] folderTags = file.Split(Path.DirectorySeparatorChar);
-
-                                string modName = string.Join(".", fileName.Split('.').Take(fileSplits - 1));
-                                string tagsFromFolder = string.Join(", ", folderTags.Take(folderTags.Length - 1).Except(filePath.Split(Path.DirectorySeparatorChar)));
-                                string readFile = reader.ReadToEnd();
-                                string replacedFile = readFile.Replace("\n", "\n,").Trim(',');
-                                string imagePath = Directory.GetFiles(Path.GetDirectoryName(file)).Where(x => Path.GetFileNameWithoutExtension(file) == "0").FirstOrDefault();
-
-                                Mod mod;
-                                try
-                                {
-                                    mod = new Mod
-                                    {
-                                        Name = modName,
-                                        FullPath = file,
-                                        TagsFromFolder = tagsFromFolder,
-                                        SimpleModsList = JsonConvert.DeserializeObject<Mod>(replacedFile).SimpleModsList,
-                                    };
-
-                                    if (imagePath != default)
-                                    {
-                                        mod.Image = new BitmapImage(new Uri(imagePath));
-                                    }
-                                }
-                                catch
-                                {
-                                    mod = new Mod
-                                    {
-                                        Name = modName,
-                                        FullPath = file,
-                                        TagsFromFolder = tagsFromFolder,
-                                        SimpleModsList = JsonConvert.DeserializeObject<SimpleModItem[]>($"[{replacedFile}]"),
-                                    };
-
-                                    if (imagePath != default)
-                                    {
-                                        mod.Image = new BitmapImage(new Uri(imagePath));
-                                    }
-                                }
-                                mod.SaveAlteredItemsList();
-                                Mods.Add(mod);
-                                Progress++;
-                            }
-                        }
-                    }
-                }
+                Mod mod = new Mod();
+                mod.ImportFromFile(file);
+                context.Send(x => Mods.Add(mod), null);
+                context.Send(x => Progress++, null);
             }
         }
         public void GetModConflicts()

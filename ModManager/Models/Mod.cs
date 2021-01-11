@@ -1,7 +1,10 @@
 ﻿using MyToolkit.WorkflowEngine;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
@@ -125,6 +128,88 @@ namespace ModManager.Models
             AlteredItemsList = new AlteredItemList();
             ModConflicts = new ModConflictList();
         }
+
+        public void ImportFromFile(string file)
+        {
+            switch (Path.GetExtension(file))
+            {
+                case ".ttmp":
+                    using (ZipArchive archive = ZipFile.OpenRead(file))
+                    {
+                        foreach (ZipArchiveEntry entry in archive.Entries)
+                        {
+                            if (entry.Name.EndsWith(".mpl"))
+                            {
+                                using (StreamReader reader = new StreamReader(entry.Open()))
+                                {
+                                    string[] folderTags = file.Remove(0, Properties.Settings.Default.ModImportPath.Length + 1).Split(Path.DirectorySeparatorChar);
+
+                                    string modName = Path.GetFileNameWithoutExtension(file);
+                                    string tagsFromFolder = string.Join(", ", folderTags);
+                                    string readFile = reader.ReadToEnd();
+                                    string replacedFile = readFile.Replace("\n", "\n,").Trim(',');
+                                    string imagePath = Directory.GetFiles(Path.GetDirectoryName(file)).Where(x => Path.GetFileNameWithoutExtension(file) == "0").FirstOrDefault();
+
+                                    try
+                                    {
+                                        Name = modName;
+                                        FullPath = file;
+                                        TagsFromFolder = tagsFromFolder;
+                                        SimpleModsList = JsonConvert.DeserializeObject<Mod>(replacedFile).SimpleModsList;
+
+                                        if (imagePath != default)
+                                        {
+                                            Image = new BitmapImage(new Uri(imagePath));
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        Name = modName;
+                                        FullPath = file;
+                                        TagsFromFolder = tagsFromFolder;
+                                        SimpleModsList = JsonConvert.DeserializeObject<SimpleModItem[]>($"[{replacedFile}]");
+
+                                        if (imagePath != default)
+                                        {
+                                            Image = new BitmapImage(new Uri(imagePath));
+                                        }
+                                    }
+                                    SaveAlteredItemsList();
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case ".ttmp2":
+                    using (ZipArchive archive = ZipFile.OpenRead(file))
+                    {
+                        foreach (ZipArchiveEntry entry in archive.Entries)
+                        {
+                            if (entry.Name.EndsWith(".mpl"))
+                            {
+                                using (StreamReader reader = new StreamReader(entry.Open()))
+                                {
+                                    Mod mod = JsonConvert.DeserializeObject<Mod>(reader.ReadToEnd());
+                                    Name = mod.Name;
+                                    Author = mod.Author;
+                                    Version = mod.Version;
+                                    Description = mod.Description;
+                                    SimpleModsList = mod.SimpleModsList;
+                                    ModPackPages = mod.ModPackPages;
+
+                                    if (Name != "") Name = Path.GetFileNameWithoutExtension(file);
+                                    FullPath = file;
+                                    TagsFromFolder = string.Join(", ", file.Remove(0, Properties.Settings.Default.ModImportPath.Length + 1).Split(Path.DirectorySeparatorChar));
+                                    SaveAlteredItemsList();
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
+            
+        }
+
 
         public void ScanForConflicts()
         {

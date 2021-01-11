@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using ModManager.Models;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 using static ModManager.Properties.Settings;
@@ -14,11 +16,11 @@ namespace ModManager.ViewModels
         {
             Directories = Directory.GetDirectories(Default.ModImportPath).Select(x => x.Split(Path.DirectorySeparatorChar).Last()).ToArray();
         }
-        public void GetModData(string url) => ModData =  new ModDataViewModel(url);
-        public void ModImport(int selectedIndex)
+        public void GetModData(string url) => ModData = new ModDataViewModel(url);
+        public List<Mod> ModImport(int selectedIndex)
         {
             string dirPath = Path.Combine(Default.ModImportPath, Directories[selectedIndex]);
-            ModData.Import(dirPath);
+            return ModData.Import(dirPath);
         }
     }
 }

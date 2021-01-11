@@ -1,4 +1,5 @@
 ﻿using ModManager.Models;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ModManager.ViewModels
@@ -10,7 +11,7 @@ namespace ModManager.ViewModels
         {
             _model = new ModData(url);
         }
-        public void Import(string dirPath) => _model.Import(dirPath);
+        public List<Mod> Import(string dirPath) => _model.Import(dirPath);
 
         public string Name => _model.Name;
         public string Author => _model.Author;
