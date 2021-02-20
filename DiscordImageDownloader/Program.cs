@@ -141,7 +141,7 @@ namespace DiscordImageDownloader
         static string GetFolderName(string fileName)
         {
             string[] splits = fileName.Split(']');
-            return string.Join(']', splits.Take(splits.Length - 1));
+            return string.Join(']', splits.Take(splits.Length - 1)) + ']';
         }
     }
 }

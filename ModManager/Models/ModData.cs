@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Windows;
 
 namespace ModManager.Models
@@ -15,6 +16,7 @@ namespace ModManager.Models
         public string Url { get; set; }
         public string Description { get; set; }
         public string Author { get; set; }
+        public string Version { get; set; }
         public string[] ImageUrls { get; set; }
         public Dictionary<string, string> Files { get; set; }
         public Dictionary<string, string> OtherFiles { get; set; }
@@ -29,13 +31,15 @@ namespace ModManager.Models
             HtmlDocument doc = new HtmlDocument();
             using (WebClient client = new WebClient())
             {
+                client.Encoding = Encoding.UTF8;
                 doc.LoadHtml(client.DownloadString(Url));
 
                 Name = doc.DocumentNode.SelectSingleNode("//*//h1").InnerText; // name
-                Description = doc.DocumentNode.SelectSingleNode("//*[@id='info']").InnerText; // description html
+                Description = StringifyHtml(doc.DocumentNode.SelectSingleNode("//*[@id='info']")); // description html
                 Author = doc.DocumentNode
                     .SelectNodes("//*[@class='user-card-link']")
                     .First(x => !string.IsNullOrEmpty(x.InnerText.Trim('\n'))).InnerText; // author
+                Version = doc.DocumentNode.SelectNodes("//*/code").First().InnerText;
                 ImageUrls = doc.DocumentNode
                     .SelectNodes("//*[@id='mod-images']//div//div//a//img")
                     .SelectMany(x => x.Attributes.Where(y => y.Name.Contains("src")).Select(y => y.Value)).ToArray(); // images url link
@@ -57,21 +61,24 @@ namespace ModManager.Models
         }
         public List<Mod> Import(string dirPath)
         {
-            Directory.CreateDirectory(dirPath);
+            bool openedExplorer = false;
             string filesPath = Path.Combine(dirPath, Name);
-            File.WriteAllText(Path.Combine(filesPath, "Description"), $@"
+            Directory.CreateDirectory(filesPath);
+
+            File.WriteAllText(Path.Combine(filesPath, "Description.txt"), $@"
                 Source: {Url}
                 Author: {Author}
                 {Description.Replace("<br>", "\n")}"
             );
+            File.WriteAllText(Path.Combine(filesPath, Version.Replace(":", "")), Version);
             using (WebClient client = new WebClient())
             {
                 for (int i = 0; i < ImageUrls.Length; i++)
                 {
                     client.DownloadFile(ImageUrls[i], Path.Combine(filesPath, $"{i}.{Path.GetExtension(ImageUrls[i])}"));
                 }
-                DownloadFiles(client, filesPath, Files, false);
-                DownloadFiles(client, filesPath, OtherFiles, true);
+                DownloadFiles(client, filesPath, Files, false, ref openedExplorer);
+                DownloadFiles(client, filesPath, OtherFiles, true, ref openedExplorer);
             }
 
             string[] ttmpFiles = Directory.GetFiles(filesPath, "*.ttmp", SearchOption.AllDirectories);
@@ -89,7 +96,7 @@ namespace ModManager.Models
             return importedMods;
         }
 
-        private void DownloadFiles(WebClient client, string filesPath, Dictionary<string, string> files, bool showBox)
+        private void DownloadFiles(WebClient client, string filesPath, Dictionary<string, string> files, bool showBox, ref bool openedExplorer)
         {
             int counter = 0;
             foreach (KeyValuePair<string, string> file in files)
@@ -100,17 +107,42 @@ namespace ModManager.Models
                 }
                 else
                 {
-                    MessageBoxResult result = MessageBoxResult.Yes;
+                    MessageBoxResult result = MessageBoxResult.None;
                     if (showBox)
                     {
-                        result = MessageBox.Show("Open File?", "", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
+                        result = MessageBox.Show($"{file.Key} -> {file.Value}", "Open File?", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
                     }
-                    if (result == MessageBoxResult.Yes)
+                    if (!showBox || result == MessageBoxResult.Yes)
                     {
-                        System.Diagnostics.Process.Start(Url);
+                        System.Diagnostics.Process.Start(file.Value);
+                        if (!openedExplorer)
+                        {
+                            System.Diagnostics.Process.Start(filesPath);
+                            openedExplorer = true;
+                        }
                     }
                 }
             }
+        }
+
+        private string StringifyHtml(HtmlNode node, bool top = true)
+        {
+            string ret = "";
+
+            if (node.ChildNodes.Any())
+            {
+                foreach (var child in node.ChildNodes)
+                {
+                    if (child.Name == "br") ret += "\n";
+                    else ret += StringifyHtml(child, false);
+                }
+            }
+            else
+            {
+                ret = node.InnerHtml;
+            }
+
+            return top ? ret.Trim('\n') : ret;
         }
     }
 }

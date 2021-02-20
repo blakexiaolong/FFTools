@@ -109,21 +109,16 @@ namespace ModManager.ViewModels
                 {
                     Mod foundMod = _mods.FirstOrDefault(x => x.Name == mod.Name);
                     if (foundMod == default) continue;
-                    else
-                    {
-                        foundMod.IsEnabled = mod.IsEnabled;
-                        Mods.Remove(foundMod);
-                        Mods.Insert(foundModsCount, foundMod);
-                    }
+                    
+                    foundMod.IsEnabled = mod.IsEnabled;
+                    Mods.Remove(foundMod);
+                    Mods.Insert(foundModsCount, foundMod);
                     foundModsCount++;
                     Progress++;
                 }
                 ScanForConflicts();
 
-                string n = string.Join("\n", Mods.Select(x => x.Name));
-                string p = string.Join("\n", presetMods.Select(x => x.Name));
-
-                List<Mod> newMods = Mods.Where(m => !p.Contains(m.Name)).ToList();
+                List<Mod> newMods = Mods.Where(x => !presetMods.Any(y => y.Name == x.Name)).ToList();
                 if (newMods.Any())
                 {
                     new NewModSelector(newMods, () => GetModConflicts()).ShowDialog();

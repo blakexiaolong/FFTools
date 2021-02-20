@@ -8,7 +8,7 @@ namespace ChatLogHtmlifier
 {
     public class ChatLogHtmlifier
     {
-        public const string TEXT_IN = @"C:\Users\Andrew\Documents\FFXIV_ChatExtender\Logs";
+        public const string TEXT_IN = @"D:\Documents\FFXIV_ChatExtender\Logs";
 
         public static void Main()
         {
@@ -78,45 +78,52 @@ namespace ChatLogHtmlifier
             string it = identifier.Trim('[');
             return it switch
             {
-                // system things
-                "SystemError" => "red",
                 "Notice" => "#B6B6B4",
                 "FCLogin" => "white",
                 "FCLogout" => "white",
-                "SystemMessage" => "#B041FF",
-                "GatheringSystemMessage" => "#B6B6B4",
+                "MessageBookAlert" => "white",
                 "RetainerSale" => "#B6B6B4",
-                "FCAnnouncement" => "#B6B6B4",
-                "StandardEmote" => "aliceblue",
-                "CustomEmote" => "aliceblue",
-
-                // chat channels
-                "Echo" => "#B6B6B4",
-                "FreeCompany" => "orange",
-                "Party" => "dodgerblue",
-                "Alliance" => "indigo",
-                "Say" => "gainsboro",
-                "Yell" => "yellow",
-                "Shout" => "darkorange",
-                "TellIncoming" => "magenta",
-                "TellOutgoing" => "magenta",
-
-                // linkshells
-                "Ls1" => "skyblue",
-                "Ls2" => "yellowgreen",
-                "Ls3" => "beeyellow",
-                "Ls4" => "chilipepper",
-                "Ls5" => "redwine",
-                "CrossLinkShell3" => "greenonion",
-                "CrossLinkShell4" => "greenonion",
-
-                // no idea what color to make these
                 "None" => "black",
-                "Loot" => "black",
-                "Ls6" => "black",
-                "Ls7" => "black",
-                "CrossLinkShell1" => "black",
-                "CrossLinkShell2" => "black",
+
+                // Chat 1
+                "Say" => "#c3c3c3",
+                "Yell" => "#ffff00",
+                "Shout" => "#ff9855",
+                "TellIncoming" => "#ffacd8",
+                "TellOutgoing" => "#ffacd8",
+                "Party" => "#55e1ff",
+                "Alliance" => "#ff6f00",
+                "StandardEmote" => "#afffed",
+                "CustomEmote" => "#afffed",
+
+                // Chat 2
+                "FreeCompany" => "#ffc39e",
+                "CrossLinkShell1" => "#ccff6c",
+                "CrossLinkShell2" => "#ccff6c",
+                "CrossLinkShell3" => "#ccff6c",
+                "CrossLinkShell4" => "#ccff6c",
+                "CrossLinkShell5" => "#ccff6c",
+                "CrossLinkShell6" => "#ccff6c",
+                "CrossLinkShell7" => "#ccff6c",
+                "CrossLinkShell8" => "#ccff6c",
+                "Ls1" => "#8dc6f0",
+                "Ls2" => "#ccff6c",
+                "Ls3" => "#ff5500",
+                "Ls4" => "#edbd5a",
+                "Ls5" => "#ff0000",
+                "Ls6" => "#ffff00",
+                "Ls7" => "#ccff6c",
+                "Ls8" => "#ccff6c",
+                "NoviceNetwork" => "#ccff6c",
+
+                // Chat 3
+                "Echo" => "#c2c2c2",
+                "SystemMessage" => "#c2c2c2",
+                "GatheringSystemMessage" => "#c2c2c2",
+                "SystemError" => "#fe3a3a",
+                "FCAnnouncement" => "#fcfcfc",
+                "Loot" => "#ffffa3",
+
                 _ => throw new FormatException($"Chat code was not in expected format or recognized -> {it}"),
             };
         }
