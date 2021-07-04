@@ -2,17 +2,15 @@
 using System.Collections.Generic;
 using ModManager.Models;
 using System.IO;
-using System.IO.Compression;
 using Newtonsoft.Json;
 using static ModManager.Models.Mod;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 using ModManager.Views.Dialogs;
-using System.Windows.Media.Imaging;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ModManager.ViewModels
 {
@@ -21,24 +19,14 @@ namespace ModManager.ViewModels
         private string _status;
         private int _progress;
         private int _progressMax;
-        private bool _enableForms;
+        private bool _enableForms = true;
         private ObservableCollection<Mod> _mods = new ObservableCollection<Mod>();
 
         public string Status { get => _status; set => Set(ref _status, value); }
         public int Progress { get => _progress; set => Set(ref _progress, value); }
         public int ProgressMax { get => _progressMax; set => Set(ref _progressMax, value); }
         public bool EnableForms { get => _enableForms; set => Set(ref _enableForms, value); }
-
-        public ModListPageModel()
-        {
-            EnableForms = true;
-        }
-
-        public ObservableCollection<Mod> Mods
-        {
-            get => _mods;
-            set => Set(ref _mods, value);
-        }
+        public ObservableCollection<Mod> Mods { get => _mods; set => Set(ref _mods, value); }
 
         public Dictionary<string, Dictionary<string, List<Mod>>> CategoryTreeMods
         {
@@ -63,6 +51,7 @@ namespace ModManager.ViewModels
                 return tree;
             }
         }
+
         public void UpdateSettings()
         {
             bool settingChanged = false;
@@ -95,6 +84,7 @@ namespace ModManager.ViewModels
 
             Status = "Settings Updated";
         }
+
         public void LoadPresets()
         {
             EnableForms = false;
@@ -112,7 +102,14 @@ namespace ModManager.ViewModels
                     
                     foundMod.IsEnabled = mod.IsEnabled;
                     Mods.Remove(foundMod);
-                    Mods.Insert(foundModsCount, foundMod);
+                    try
+                    {
+                        Mods.Insert(foundModsCount, foundMod);
+                    }
+                    catch
+                    {
+                        Mods.Add(foundMod);
+                    }
                     foundModsCount++;
                     Progress++;
                 }
@@ -149,6 +146,7 @@ namespace ModManager.ViewModels
             ScanForConflicts();
             EnableForms = true;
         }
+
         public void DisableAllMods()
         {
             EnableForms = false;
@@ -178,6 +176,7 @@ namespace ModManager.ViewModels
 
             EnableForms = true;
         }
+
         private void ImportModsWorker(object sender, DoWorkEventArgs e)
         {
             var context = (SynchronizationContext)e.Argument;
@@ -186,6 +185,7 @@ namespace ModManager.ViewModels
             GetModConflicts();
             context.Send(x => Status = $"{Mods.Count()} Mods Imported", null);
         }
+
         public void LoadModsFromFile(string filePath, SynchronizationContext context)
         {
             context.Send(x => Progress = 0, null);
@@ -204,6 +204,7 @@ namespace ModManager.ViewModels
                 context.Send(x => Progress++, null);
             }
         }
+
         public void GetModConflicts()
         {
             AlteredItemList filesWithConflicts = new AlteredItemList();
@@ -226,6 +227,7 @@ namespace ModManager.ViewModels
                 }
             }
         }
+
         public void ScanForConflicts()
         {
             EnableForms = false;
@@ -242,13 +244,14 @@ namespace ModManager.ViewModels
             List<Mod> enabledMods = _mods.Where(x => x.IsEnabled).ToList();
             Progress = 0;
             ProgressMax = enabledMods.Count();
-            foreach (Mod enabledMod in enabledMods)
+            await Task.Factory.StartNew(() =>
             {
-                File.Copy(enabledMod.FullPath, Path.Combine(folderPath, $"{Progress + 1:D3}. {enabledMod.Name}"));
-                Progress++;
-                //TODO: maybe remove this? idk it has a nice effect
-                await Task.Delay(10);
-            }
+                foreach (Mod enabledMod in enabledMods)
+                {
+                    File.Copy(enabledMod.FullPath, Path.Combine(folderPath, $"{Progress + 1:D3}. {Path.GetFileName(enabledMod.FullPath)}"));
+                    Progress++;
+                }
+            });
             Status = "Mods Exported";
             EnableForms = true;
         }

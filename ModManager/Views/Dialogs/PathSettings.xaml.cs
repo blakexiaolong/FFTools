@@ -12,6 +12,7 @@
             ModImportPathBox.Text = Properties.Settings.Default.ModImportPath;
             ModExportPathBox.Text = Properties.Settings.Default.ModExportPath;
             PresetFileLocationBox.Text = Properties.Settings.Default.PresetFilePath;
+            XMASessionIdBox.Text = Properties.Settings.Default.SessionCookie;
         }
 
         private void BrowseModImportButton_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -63,6 +64,7 @@
             Properties.Settings.Default.ModImportPath = ModImportPathBox.Text;
             Properties.Settings.Default.ModExportPath = ModExportPathBox.Text;
             Properties.Settings.Default.PresetFilePath = PresetFileLocationBox.Text;
+            Properties.Settings.Default.SessionCookie = XMASessionIdBox.Text;
             Properties.Settings.Default.Save();
             Close();
         }

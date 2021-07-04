@@ -30,7 +30,7 @@ namespace ModManager.Views.Dialogs
             TitleBox.Text = $"{_viewModel.ModData.Name} by {_viewModel.ModData.Author}";
             DescriptionBox.Text = _viewModel.ModData.Description;
             FilesBox.Text = string.Join("\n", _viewModel.ModData.Files);
-            ImageBox.Source = new BitmapImage(new Uri(_viewModel.ModData.Image));
+            ImageBox.Source = _viewModel.ModData.Image == null ? null : new BitmapImage(new Uri(_viewModel.ModData.Image));
         }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)

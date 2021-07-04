@@ -14,5 +14,11 @@
     <Setting Name="UpgradeRequired" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="XMAUrl" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">https://xivmodarchive.com</Value>
+    </Setting>
+    <Setting Name="SessionCookie" Type="System.String" Scope="User">
+      <Value Profile="(Default)">connect.sid=s%3Ah-e9x7JQkOcJWQQOKaxzBmTXzXLzGhaO.EkjLJ%2FRXHz1jzBfQlfaOD%2BEoPzGig33RrK6sdmkX21M;</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

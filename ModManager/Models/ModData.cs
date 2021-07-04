@@ -10,8 +10,6 @@ namespace ModManager.Models
 {
     public class ModData
     {
-        public static string ModArchive = "https://www.xivmodarchive.com";
-
         public string Name { get; set; }
         public string Url { get; set; }
         public string Description { get; set; }
@@ -24,6 +22,9 @@ namespace ModManager.Models
         public ModData(string url)
         {
             Url = url;
+            ImageUrls = new string[] { };
+            Files = new Dictionary<string, string>();
+            OtherFiles = new Dictionary<string, string>();
             Scrape();
         }
         private void Scrape()
@@ -32,31 +33,54 @@ namespace ModManager.Models
             using (WebClient client = new WebClient())
             {
                 client.Encoding = Encoding.UTF8;
-                doc.LoadHtml(client.DownloadString(Url));
+                //client.Headers.Add(HttpRequestHeader.Cookie, Properties.Settings.Default.SessionCookie);
+                try
+                {
+                    doc.LoadHtml(client.DownloadString(Url));
 
-                Name = doc.DocumentNode.SelectSingleNode("//*//h1").InnerText; // name
-                Description = StringifyHtml(doc.DocumentNode.SelectSingleNode("//*[@id='info']")); // description html
-                Author = doc.DocumentNode
-                    .SelectNodes("//*[@class='user-card-link']")
-                    .First(x => !string.IsNullOrEmpty(x.InnerText.Trim('\n'))).InnerText; // author
-                Version = doc.DocumentNode.SelectNodes("//*/code").First().InnerText;
-                ImageUrls = doc.DocumentNode
-                    .SelectNodes("//*[@id='mod-images']//div//div//a//img")
-                    .SelectMany(x => x.Attributes.Where(y => y.Name.Contains("src")).Select(y => y.Value)).ToArray(); // images url link
-                Files = doc.DocumentNode
-                    .SelectNodes("//*[@class='primary-download-listing']")
-                    .ToDictionary(x =>
-                        x.ChildNodes[0].InnerHtml.Split(':')[0],
-                        x => x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value.StartsWith("/")
-                            ? $"{ModArchive}{x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value}"
-                            : x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value);
-                OtherFiles = doc.DocumentNode
-                    .SelectNodes("//*[@id='files']//div//ul//li")
-                    .ToDictionary(x =>
-                        x.ChildNodes[0].InnerHtml.Split(':')[0],
-                        x => x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value.StartsWith("/")
-                            ? $"{ModArchive}{x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value}"
-                            : x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value);
+                    Name = doc.DocumentNode.SelectSingleNode("//*//h1").InnerText; // name
+                    Description = StringifyHtml(doc.DocumentNode.SelectSingleNode("//*[@id='info']")); // description html
+                    Author = doc.DocumentNode
+                        .SelectNodes("//*[@class='user-card-link']")
+                        .First(x => !string.IsNullOrEmpty(x.InnerText.Trim('\n'))).InnerText; // author
+                    Version = doc.DocumentNode.SelectNodes("//*/code").First().InnerText;
+                    ImageUrls = doc.DocumentNode
+                        .SelectNodes("//*[@id='mod-images']//div//div//a//img")
+                        .SelectMany(x => x.Attributes.Where(y => y.Name.Contains("src")).Select(y => y.Value)).ToArray(); // images url link
+                    Files = doc.DocumentNode
+                        .SelectNodes("//*[@class='primary-download-listing']")
+                        .ToDictionary(x =>
+                            x.ChildNodes[0].InnerHtml.Split(':')[0],
+                            x => x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value.StartsWith("/")
+                                ? $"{Properties.Settings.Default.XMAUrl}{x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value}"
+                                : x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value);
+                    try
+                    {
+                        OtherFiles = doc.DocumentNode
+                            .SelectNodes("//*[@id='files']//div//ul//li")
+                            .ToDictionary(x =>
+                                x.ChildNodes[0].InnerHtml.Split(':')[0],
+                                x => x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value.StartsWith("/")
+                                    ? $"{Properties.Settings.Default.XMAUrl}{x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value}"
+                                    : x.ChildNodes[1].Attributes.First(y => y.Name == "href").Value);
+                    }
+                    catch
+                    {
+                        OtherFiles = new Dictionary<string, string>();
+                    }
+                }
+                catch (WebException e)
+                {
+                    if (e.Message.Contains("(403)"))
+                    {
+                        MessageBox.Show(
+                            "We're getting an unhappy error from the Mod Archive. Please go into Path Settings and set a non-expired Session ID, as thats likely what's causing the issue.",
+                            "403 Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning
+                        );
+                    }
+                }
             }
         }
         public List<Mod> Import(string dirPath)
@@ -73,6 +97,7 @@ namespace ModManager.Models
             File.WriteAllText(Path.Combine(filesPath, Version.Replace(":", "")), Version);
             using (WebClient client = new WebClient())
             {
+                client.Headers.Add(HttpRequestHeader.Cookie, Properties.Settings.Default.SessionCookie);
                 for (int i = 0; i < ImageUrls.Length; i++)
                 {
                     client.DownloadFile(ImageUrls[i], Path.Combine(filesPath, $"{i}.{Path.GetExtension(ImageUrls[i])}"));
@@ -101,7 +126,7 @@ namespace ModManager.Models
             int counter = 0;
             foreach (KeyValuePair<string, string> file in files)
             {
-                if (file.Value.StartsWith(ModArchive))
+                if (file.Value.StartsWith(Properties.Settings.Default.XMAUrl))
                 {
                     client.DownloadFile(file.Value, Path.Combine(filesPath, $"{counter}.{Path.GetExtension(file.Value)}"));
                 }

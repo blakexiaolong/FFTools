@@ -1,5 +1,4 @@
-﻿using MyToolkit.WorkflowEngine;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,10 +10,6 @@ using System.Windows.Media.Imaging;
 
 namespace ModManager.Models
 {
-    public enum ModCategory
-    {
-        Unknown
-    }
     public class Mod : INotifyPropertyChanged
     {
         private bool _isEnabled;
@@ -78,56 +73,14 @@ namespace ModManager.Models
         [JsonProperty(PropertyName = "ModPackPages")]
         public ModPackPage[] ModPackPages { get; set; }
 
-        public class SimpleModItem
-        {
-            [JsonProperty(PropertyName = "Name")]
-            public string Name { get; set; }
-
-            [JsonProperty(PropertyName = "Category")]
-            public string Category { get; set; }
-
-            [JsonProperty(PropertyName = "FullPath")]
-            public string FullPath { get; set; }
-        }
-        public class ModPackPage
-        {
-            [JsonProperty(PropertyName = "PageIndex")]
-            public string PageIndex { get; set; }
-            [JsonProperty(PropertyName = "ModGroups")]
-            public ModGroup[] ModGroups { get; set; }
-            public class ModGroup
-            {
-                [JsonProperty(PropertyName = "GroupName")]
-                public string GroupName { get; set; }
-                [JsonProperty(PropertyName = "SelectionType")]
-                public string SelectionType { get; set; }
-                [JsonProperty(PropertyName = "OptionList")]
-                public Option[] OptionList { get; set; }
-                public class Option
-                {
-                    [JsonProperty(PropertyName = "Name")]
-                    public string Name { get; set; }
-                    [JsonProperty(PropertyName = "Description")]
-                    public string Description { get; set; }
-                    [JsonProperty(PropertyName = "ImagePath")]
-                    public string ImagePath { get; set; }
-                    [JsonProperty(PropertyName = "ModsJsons")]
-                    public SimpleModItem[] ModsJsons { get; set; }
-                    [JsonProperty(PropertyName = "GroupName")]
-                    public string GroupName { get; set; }
-                    [JsonProperty(PropertyName = "SelectionType")]
-                    public string SelectionType { get; set; }
-                    [JsonProperty(PropertyName = "IsChecked")]
-                    public string IsChecked { get; set; }
-                }
-            }
-        }
-
+        
         public Mod()
         {
             AlteredItemsList = new AlteredItemList();
             ModConflicts = new ModConflictList();
         }
+
+        public OutputMod GetOutputMod() => new OutputMod { Name = Name, Category = Category, IsEnabled = IsEnabled };
 
         public void ImportFromFile(string file)
         {
@@ -207,7 +160,6 @@ namespace ModManager.Models
                     }
                     break;
             }
-            
         }
 
 
@@ -226,14 +178,6 @@ namespace ModManager.Models
             }
         }
 
-        #region INotifyPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        #endregion
-
         public void SaveAlteredItemsList()
         {
             if (SimpleModsList != null)
@@ -250,24 +194,19 @@ namespace ModManager.Models
             }
         }
 
-        public class OutputMod
-        {
-            public string Name { get; set; }
-            public ModCategory Category { get; set; }
-            public bool IsEnabled { get; set; }
-        }
-        public OutputMod GetOutputMod() => new OutputMod
-        {
-            Name = Name,
-            Category = Category,
-            IsEnabled = IsEnabled
-        };
-        
         private void AddToAlteredItemsList(IEnumerable<string> itemNames, IEnumerable<SimpleModItem> modItems)
         {
             foreach (string itemName in itemNames)
                 foreach (string fileName in modItems.Where(x => x.Name.Equals(itemName)).Select(x => x.FullPath))
                     AlteredItemsList.Add(itemName, fileName);
         }
+
+        #region INotifyPropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        #endregion
     }
 }

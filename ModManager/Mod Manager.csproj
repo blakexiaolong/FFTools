@@ -76,6 +76,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Models\AlteredItemList.cs" />
+    <Compile Include="Models\ModCategory.cs" />
     <Compile Include="Models\ModConflictList.cs" />
     <Compile Include="Models\Mod.cs" />
     <Page Include="Views\Dialogs\ModImporter.xaml">
@@ -99,6 +100,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Models\ModData.cs" />
+    <Compile Include="Models\ModGroup.cs" />
+    <Compile Include="Models\ModPackPage.cs" />
+    <Compile Include="Models\OutputMod.cs" />
+    <Compile Include="Models\SimpleModItem.cs" />
     <Compile Include="ViewModels\ModDataViewModel.cs" />
     <Compile Include="ViewModels\ModImporterViewModel.cs" />
     <Compile Include="ViewModels\ModListPageModel.cs" />

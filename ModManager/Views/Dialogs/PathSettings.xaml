@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ModManager.Views.Dialogs"
         mc:Ignorable="d"
-        Title="Path Settings" Height="256.014" Width="600" ResizeMode="NoResize">
+        Title="Path Settings" Height="320.725" Width="600" ResizeMode="NoResize">
     <Grid>
         <TextBlock TextWrapping="Wrap" Text="Mod Import Directory" VerticalAlignment="Top" Margin="10,10,10,0" Height="18"/>
         <TextBlock Margin="10,62,41,0" TextWrapping="Wrap" Text="Mod Export Directory" VerticalAlignment="Top" Height="18"/>
@@ -14,6 +14,9 @@
         <TextBox Margin="10,33,41,0" TextWrapping="Wrap" Name="ModImportPathBox" VerticalAlignment="Top" Height="24"/>
         <TextBox Margin="10,85,41,0" TextWrapping="Wrap" Name="ModExportPathBox" VerticalAlignment="Top" Height="24"/>
         <TextBox Margin="10,137,41,0" TextWrapping="Wrap" Name="PresetFileLocationBox" VerticalAlignment="Top" Height="24"/>
+
+        <TextBlock Margin="10,173,41,0" TextWrapping="Wrap" Text="XMA Session ID" VerticalAlignment="Top" Height="18"/>
+        <TextBox Margin="10,196,41,0" TextWrapping="Wrap" x:Name="XMASessionIdBox" VerticalAlignment="Top" Height="46"/>
 
         <Button Content="..." Margin="558,33,10,0" Click="BrowseModImportButton_Click" VerticalAlignment="Top" Height="24"/>
         <Button Content="..." Margin="558,85,10,0" Click="BrowseModExportButton_Click" VerticalAlignment="Top" Height="24"/>

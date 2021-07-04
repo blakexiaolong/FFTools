@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
 using static ModManager.Properties.Settings;
 
 namespace ModManager.ViewModels

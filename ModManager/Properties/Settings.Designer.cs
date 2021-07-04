@@ -12,7 +12,7 @@ namespace ModManager.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.7.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -68,6 +68,28 @@ namespace ModManager.Properties {
             }
             set {
                 this["UpgradeRequired"] = value;
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://xivmodarchive.com")]
+        public string XMAUrl {
+            get {
+                return ((string)(this["XMAUrl"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("connect.sid=s%3Ah-e9x7JQkOcJWQQOKaxzBmTXzXLzGhaO.EkjLJ%2FRXHz1jzBfQlfaOD%2BEoPzGi" +
+            "g33RrK6sdmkX21M;")]
+        public string SessionCookie {
+            get {
+                return ((string)(this["SessionCookie"]));
+            }
+            set {
+                this["SessionCookie"] = value;
             }
         }
     }
