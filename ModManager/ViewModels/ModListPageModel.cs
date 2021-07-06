@@ -173,8 +173,6 @@ namespace ModManager.ViewModels
             {
                 Status = "Mod Path does not exist";
             }
-
-            EnableForms = true;
         }
 
         private void ImportModsWorker(object sender, DoWorkEventArgs e)
@@ -184,6 +182,8 @@ namespace ModManager.ViewModels
             LoadModsFromFile(Properties.Settings.Default.ModImportPath, context);
             GetModConflicts();
             context.Send(x => Status = $"{Mods.Count()} Mods Imported", null);
+
+            EnableForms = true;
         }
 
         public void LoadModsFromFile(string filePath, SynchronizationContext context)

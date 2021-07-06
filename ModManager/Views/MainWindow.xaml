@@ -14,27 +14,117 @@
         <viewModels:ModListPageModel x:Key="ViewModel" />
     </Window.Resources>
 
+
     <Grid DataContext="{StaticResource ViewModel}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="451*"/>
-            <RowDefinition Height="18*"/>
+            <RowDefinition Height="50" />
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="15" />
+            <RowDefinition Height="10" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="67*"/>
-            <ColumnDefinition Width="131*"/>
-        </Grid.ColumnDefinitions>
-
-        <Button Content="Save Preset" Background="#FFF5F5F5" Margin="5,5,0,0" Height="19" VerticalAlignment="Top" HorizontalAlignment="Left" Width="70" Click="SavePresetButton_Click" IsEnabled="{Binding EnableForms}"/>
-        <Button Content="Load Preset" Background="#FFF5F5F5" Margin="80,5,0,0" HorizontalAlignment="Left" Width="70" Height="19" VerticalAlignment="Top" Click="LoadPresetButton_Click" IsEnabled="{Binding EnableForms}"/>
-        <Button Content="Paths" Background="#FFF5F5F5" Margin="155,5,0,0" HorizontalAlignment="Left" Width="70" Height="19" VerticalAlignment="Top" Click="EditPathsButton_Click" IsEnabled="{Binding EnableForms}"/>
-        <Button Content="Download Mods" Grid.Column="1" HorizontalAlignment="Right" Margin="0,6,351,0" Background="#FFF5F5F5" VerticalAlignment="Top" Width="96" Height="18" IsEnabled="{Binding EnableForms}" Click="DownloadButton_Click"/>
-        <Button Content="Re-Import Mods" Grid.Column="1" HorizontalAlignment="Right" Margin="0,6,250,0" Background="#FFF5F5F5" VerticalAlignment="Top" Width="96" Height="19" Click="ImportModsButton_Click" IsEnabled="{Binding EnableForms}"/>
-        <Button Content="Enable All" Grid.Column="1" HorizontalAlignment="Right" Margin="0,6,170,0" Background="#FFF5F5F5" VerticalAlignment="Top" Width="75" Height="19" Click="EnableAllButton_Click" IsEnabled="{Binding EnableForms}"/>
-        <Button Content="Disable All" Grid.Column="1" HorizontalAlignment="Right" Margin="0,6,90,0" Background="#FFF5F5F5" VerticalAlignment="Top" Width="75" Height="19" Click="DisableAllButton_Click" IsEnabled="{Binding EnableForms}"/>
-        <Button Content="Export Mods" Grid.Column="1" HorizontalAlignment="Right" Margin="0,5,10,0" Background="#FFF5F5F5" VerticalAlignment="Top" Width="75" Height="19" Click="ExportModsButton_Click" IsEnabled="{Binding EnableForms}"/>
-
-        <TabControl Margin="10,47,10,20" Grid.ColumnSpan="2">
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Save Preset" Background="#FFF5F5F5" Height="19"  Width="70" Margin="5,0" Click="SavePresetButton_Click" IsEnabled="{Binding EnableForms}"/>
+                <Button Content="Load Preset" Background="#FFF5F5F5" Height="19" Width="70" Margin="5,0" Click="LoadPresetButton_Click" IsEnabled="{Binding EnableForms}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Paths" Background="#FFF5F5F5" Width="70" Height="19" Margin="5,0" Click="EditPathsButton_Click" IsEnabled="{Binding EnableForms}"/>
+                <Button Content="Download Mods" Background="#FFF5F5F5" Width="96" Height="18" Margin="5,0" Click="DownloadButton_Click" IsEnabled="{Binding EnableForms}"/>
+                <Button Content="Re-Import Mods" Background="#FFF5F5F5" Width="96" Height="19" Margin="5,0" Click="ImportModsButton_Click" IsEnabled="{Binding EnableForms}"/>
+                <Button Content="Export Mods" Background="#FFF5F5F5" Width="75" Height="19" Margin="5,0" Click="ExportModsButton_Click" IsEnabled="{Binding EnableForms}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Enable All" Background="#FFF5F5F5" Width="75" Height="19" Margin="5,0" Click="EnableAllButton_Click" IsEnabled="{Binding EnableForms}"/>
+                <Button Content="Disable All" Background="#FFF5F5F5" Width="75" Height="19" Margin="5,0" Click="DisableAllButton_Click" IsEnabled="{Binding EnableForms}"/>
+            </StackPanel>
+        </Grid>
+        <TabControl Grid.Row="1">
             <TabItem Header="Organizer Mode">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="1*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBox Name="FilterBox" Height="20" Width="300" VerticalContentAlignment="Center" Margin="5,0" KeyUp="FilterBox_TextChanged" />
+                    </StackPanel>
+                    <ListView
+                        Name="lvOrganizer"
+                        Grid.Row="1"
+                        ItemsSource="{Binding Mods, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        SelectionMode="Extended"
+                        dd:DragDrop.IsDragSource="True"
+                        dd:DragDrop.IsDropTarget="True"
+                    >
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Enabled" Width="50">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox
+                                                    Click="IsEnabledCheckBox_Click"
+                                                    Height="20" Width="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    IsChecked="{Binding IsEnabled}"
+                                                />
+                                                <Image
+                                                    Source="/FFXIV Mod Manager;component/Resources/alert.jpg"
+                                                    Stretch="Uniform" Height="20" Width="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasConflict, Converter={StaticResource BoolToVis}}"
+                                                    ToolTip="{Binding ActiveModConflicts}"
+                                                />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="300" />
+                                <GridViewColumn Header="Folders" DisplayMemberBinding="{Binding DisplayFolders}" Width="200" />
+                                <GridViewColumn Header="Author" DisplayMemberBinding="{Binding Author}" Width="100" />
+                            </GridView>
+                        </ListView.View>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <EventSetter Event="Selected" Handler="OrganizerViewItem_Selected" />
+                                <EventSetter Event="Unselected" Handler="OrganizerViewItem_Unselected" />
+                                <EventSetter Event="MouseDoubleClick" Handler="OrganizerViewItem_MouseDoubleClick" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.ContainerStyle>
+                                    <Style TargetType="{x:Type GroupItem}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <Expander Header="{Binding Name}" IsExpanded="True">
+                                                        <ItemsPresenter />
+                                                    </Expander>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </GroupStyle.ContainerStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListView.GroupStyle>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Category View" GotFocus="CategoryView_GotFocus">
+                <TreeView Name="CategoryTreeView" />
+            </TabItem>
+            <TabItem Header="Old Organizer Mode">
                 <DataGrid
                     Name="OrganizerDataGrid"
                     ItemsSource="{Binding Mods, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -55,7 +145,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="Name" Width="3*" Binding="{Binding Name}"/>
-                        <DataGridTextColumn Header="Folders" Width="2*" Binding="{Binding TagsFromFolder}"/>
+                        <DataGridTextColumn Header="Folders" Width="2*" Binding="{Binding DisplayFolders}"/>
                         <DataGridTextColumn Header="Author" Width="1*" Binding="{Binding Author}"/>
                         <DataGridTextColumn Header="Version" Binding="{Binding Version}"/>
                         <DataGridTemplateColumn Header="Has Conflict">
@@ -72,12 +162,8 @@
                     </DataGrid.RowDetailsTemplate>
                 </DataGrid>
             </TabItem>
-            <TabItem Header="Category View" GotFocus="CategoryView_GotFocus">
-                <TreeView Name="CategoryTreeView" />
-            </TabItem>
         </TabControl>
-
-        <ProgressBar Margin="10,0,10,5" Value="{Binding Progress}" Maximum="{Binding ProgressMax}" Grid.ColumnSpan="2" Height="10" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="10,0,10,17" TextWrapping="Wrap" Text="{Binding Status}" TextAlignment="Center" Grid.ColumnSpan="2" Grid.Row="1"/>
+        <TextBlock Grid.Row="2" Text="{Binding Status}" TextAlignment="Center" VerticalAlignment="Bottom" />
+        <ProgressBar Grid.Row="3" Value="{Binding Progress}" Maximum="{Binding ProgressMax}" />
     </Grid>
 </Window>

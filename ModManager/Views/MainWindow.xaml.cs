@@ -5,6 +5,10 @@ using System.Windows.Controls;
 using ModManager.ViewModels;
 using ModManager.Views.Dialogs;
 using ModManager.Models;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ModManager
 {
@@ -18,6 +22,10 @@ namespace ModManager
             InitializeComponent();
             Model.UpdateSettings();
             Model.ImportMods();
+            CollectionView view = (CollectionView)CollectionViewSource.GetDefaultView(lvOrganizer.ItemsSource);
+            PropertyGroupDescription propertyGroupDescription = new PropertyGroupDescription("TopFolder");
+            view.GroupDescriptions.Add(propertyGroupDescription);
+            view.Filter = UserFilter;
         }
 
         public ModListPageModel Model
@@ -123,6 +131,74 @@ namespace ModManager
                 break;
             }
             return index;
+        }
+
+        private void FilterBox_TextChanged(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            CollectionViewSource.GetDefaultView(lvOrganizer.ItemsSource).Refresh();
+        }
+        private void OrganizerViewItem_Selected(object sender, RoutedEventArgs e)
+        {
+            Mod selectedMod = (Mod)((ListViewItem)e.OriginalSource).DataContext;
+            IEnumerable<Mod> conflictingMods = selectedMod.ModConflicts.Select(x => x.Key);
+
+            SolidColorBrush enabledBrush = new SolidColorBrush(Color.FromArgb(100, 255, 0, 0));
+            SolidColorBrush disabledBrush = new SolidColorBrush(Color.FromArgb(100, 0, 0, 255));
+            foreach (Mod conflictingMod in conflictingMods)
+            {
+                ListBoxItem listBoxItem = lvOrganizer.ItemContainerGenerator.ContainerFromItem(conflictingMod) as ListBoxItem;
+                if (listBoxItem == default) continue;
+                listBoxItem.Background = conflictingMod.IsEnabled ? enabledBrush : disabledBrush;
+            }
+        }
+        private void OrganizerViewItem_Unselected(object sender, RoutedEventArgs e)
+        {
+            foreach(Mod mod in Model.Mods)
+            {
+                ListBoxItem listBoxItem = lvOrganizer.ItemContainerGenerator.ContainerFromItem(mod) as ListBoxItem;
+                if (listBoxItem == default) continue;
+                listBoxItem.Background = Brushes.Transparent;
+            }
+        }
+        private void OrganizerViewItem_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Mod selectedMod = ((ListViewItem)sender).DataContext as Mod;
+
+            DetailedModView detailedModView = new DetailedModView();
+            detailedModView.Title = selectedMod.Name;
+            detailedModView.TitleBlock.Text = $"{selectedMod.Name} by {selectedMod.Author ?? "?"}";
+            detailedModView.SubtitleBlock.Text = $"{selectedMod.Category} Mod ({string.Join(",", selectedMod.DisplayFolders)})";
+            detailedModView.DescriptionBlock.Text = selectedMod.Description;
+            foreach (var alteredItem in selectedMod.AlteredItemsList)
+            {
+                TreeViewItem modItem = new TreeViewItem { Header = alteredItem.Key };
+                foreach (var subitem in alteredItem.Value)
+                {
+                    modItem.Items.Add(new TreeViewItem { Header = subitem });
+                }
+                detailedModView.AlteredItemsTree.Items.Add(modItem);
+            }
+            detailedModView.FlipView.ItemsSource = new[] { selectedMod.Image };
+            detailedModView.FlipView.SelectedIndex = 0;
+            detailedModView.Show();
+        }
+
+        private bool UserFilter(object item)
+        {
+            string fText = FilterBox.Text;
+            if (string.IsNullOrEmpty(fText))
+                return true;
+
+            Mod mod = item as Mod;
+            IEnumerable<string> compareFields = new List<string>
+            {
+                mod.Name ?? "",
+                mod.Author ?? "",
+                mod.Category.ToString() ?? "",
+                mod.Description ?? "",
+                mod.DisplayFolders ?? ""
+            }.Concat(mod.AlteredItemsList.Select(x => x.Key));
+            return compareFields.Any(x => x.IndexOf(fText, System.StringComparison.OrdinalIgnoreCase) >= 0);
         }
     }
 }

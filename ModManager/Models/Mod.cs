@@ -67,7 +67,9 @@ namespace ModManager.Models
         [JsonProperty(PropertyName = "Description")]
         public string Description { get; set; }
         public BitmapImage Image { get; set; }
-        public string TagsFromFolder { get; set; }
+        public List<string> TagsFromFolder { get; set; }
+        public string DisplayFolders { get => string.Join(",", TagsFromFolder); }
+        public string TopFolder { get => TagsFromFolder.FirstOrDefault(); }
         [JsonProperty(PropertyName = "SimpleModsList")]
         public SimpleModItem[] SimpleModsList { get; set; }
         [JsonProperty(PropertyName = "ModPackPages")]
@@ -98,7 +100,6 @@ namespace ModManager.Models
                                     string[] folderTags = file.Remove(0, Properties.Settings.Default.ModImportPath.Length + 1).Split(Path.DirectorySeparatorChar);
 
                                     string modName = Path.GetFileNameWithoutExtension(file);
-                                    string tagsFromFolder = string.Join(", ", folderTags);
                                     string readFile = reader.ReadToEnd();
                                     string replacedFile = readFile.Replace("\n", "\n,").Trim(',');
                                     string imagePath = Directory.GetFiles(Path.GetDirectoryName(file)).Where(x => Path.GetFileNameWithoutExtension(file) == "0").FirstOrDefault();
@@ -107,7 +108,7 @@ namespace ModManager.Models
                                     {
                                         Name = modName;
                                         FullPath = file;
-                                        TagsFromFolder = tagsFromFolder;
+                                        TagsFromFolder = folderTags.Take(folderTags.Length - 1).ToList();
                                         SimpleModsList = JsonConvert.DeserializeObject<Mod>(replacedFile).SimpleModsList;
 
                                         if (imagePath != default)
@@ -119,7 +120,7 @@ namespace ModManager.Models
                                     {
                                         Name = modName;
                                         FullPath = file;
-                                        TagsFromFolder = tagsFromFolder;
+                                        TagsFromFolder = folderTags.Take(folderTags.Length - 1).ToList();
                                         SimpleModsList = JsonConvert.DeserializeObject<SimpleModItem[]>($"[{replacedFile}]");
 
                                         if (imagePath != default)
@@ -150,9 +151,11 @@ namespace ModManager.Models
                                     SimpleModsList = mod.SimpleModsList;
                                     ModPackPages = mod.ModPackPages;
 
+                                    string[] folderTags = file.Remove(0, Properties.Settings.Default.ModImportPath.Length + 1).Split(Path.DirectorySeparatorChar);
+
                                     if (Name != "") Name = Path.GetFileNameWithoutExtension(file);
                                     FullPath = file;
-                                    TagsFromFolder = string.Join(", ", file.Remove(0, Properties.Settings.Default.ModImportPath.Length + 1).Split(Path.DirectorySeparatorChar));
+                                    TagsFromFolder = folderTags.Take(folderTags.Length - 1).ToList();
                                     SaveAlteredItemsList();
                                 }
                             }

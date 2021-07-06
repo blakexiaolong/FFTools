@@ -75,10 +75,21 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Components\FlipView\AnimationFactory.cs" />
+    <Compile Include="Components\FlipView\FlipView.cs" />
+    <Compile Include="Components\FlipView\FlipViewPanel.cs" />
     <Compile Include="Models\AlteredItemList.cs" />
     <Compile Include="Models\ModCategory.cs" />
     <Compile Include="Models\ModConflictList.cs" />
     <Compile Include="Models\Mod.cs" />
+    <Page Include="Themes\FlipView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Dialogs\DetailedModView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\Dialogs\ModImporter.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -107,6 +118,9 @@
     <Compile Include="ViewModels\ModDataViewModel.cs" />
     <Compile Include="ViewModels\ModImporterViewModel.cs" />
     <Compile Include="ViewModels\ModListPageModel.cs" />
+    <Compile Include="Views\Dialogs\DetailedModView.xaml.cs">
+      <DependentUpon>DetailedModView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Dialogs\ModImporter.xaml.cs">
       <DependentUpon>ModImporter.xaml</DependentUpon>
     </Compile>
