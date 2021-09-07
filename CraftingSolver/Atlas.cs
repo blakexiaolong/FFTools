@@ -40,23 +40,6 @@ namespace CraftingSolver
                 OnExcellent = false,
                 OnPoor = false
             };
-            public static Action BasicSynth2 = new Action
-            {
-                ShortName = "basicSynth2",
-                Name = "Basic Synthesis 2",
-                DurabilityCost = 10,
-                CPCost = 0,
-                SuccessProbability = 1.0,
-                QualityIncreaseMultiplier = 0.0,
-                ProgressIncreaseMultiplier = 1.2,
-                ActionType = "immediate",
-                ActiveTurns = 1,
-                Class = "All",
-                Level = 31,
-                OnGood = false,
-                OnExcellent = false,
-                OnPoor = false
-            };
             public static Action CarefulSynthesis = new Action
             {
                 ShortName = "carefulSynthesis",
@@ -606,7 +589,6 @@ namespace CraftingSolver
             {
                 Observe,
                 BasicSynth,
-                BasicSynth2,
                 CarefulSynthesis,
                 RapidSynthesis,
                 FlawlessSynthesis,
@@ -644,7 +626,6 @@ namespace CraftingSolver
             {
                 Observe,
                 BasicSynth,
-                BasicSynth2,
                 CarefulSynthesis,
                 BasicTouch,
                 StandardTouch,
@@ -669,6 +650,12 @@ namespace CraftingSolver
                 DelicateSynthesis,
                 TrainedEye,
                 DummyAction
+            };
+            public static Action[] FirstRoundActions = new Action[]
+            {
+                MuscleMemory,
+                TrainedEye,
+                Reflect
             };
         };
         public static Dictionary<int, int> LevelTable = new Dictionary<int, int>

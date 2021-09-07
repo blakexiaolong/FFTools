@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,9 +15,9 @@ namespace CraftingSolver
             Crafter = new Crafter
             {
                 Class = "Armorer",
-                Craftsmanship = 2673,
-                Control = 2758,
-                CP = 542,
+                Craftsmanship = 2737,
+                Control = 2810,
+                CP = 548,
                 Level = 80,
                 Specialist = false,
                 Actions = Atlas.Actions.DependableActions
@@ -24,10 +25,10 @@ namespace CraftingSolver
             Recipe = new Recipe
             {
                 Level = 480,
-                Difficulty = 7414,
+                Difficulty = 6178,
                 Durability = 70,
                 StartQuality = 0,
-                MaxQuality = 46553,
+                MaxQuality = 36208,
                 SuggestedCraftsmanship = 2480,
                 SuggestedControl = 2195,
                 Stars = 3
@@ -35,13 +36,12 @@ namespace CraftingSolver
             MaxTrickUses = 0,
             UseConditions = false,
             ReliabilityIndex = 1,
-            MaxLength = 6,
+            MaxLength = 30,
         };
 
         public void Solve()
         {
-            BruteForceSolver2 solver = new BruteForceSolver2();
-            solver.Run(sim, maxTasks);
+            var solution = new BruteForceSolver3().Run(sim, maxTasks);
         }
 
         public interface ISolver
@@ -294,6 +294,108 @@ namespace CraftingSolver
             {
                 if (!state.CheckViolations().ProgressOk) return -1;
                 else return state.Quality + 2 * (sim.MaxLength - state.Step);
+            }
+        }
+
+        public class BruteForceSolver3
+        {
+            public Action[] Run(Simulator sim, int maxTasks)
+            {
+                ulong attempts = 0;
+                int solutionsToKeep = 80000; // was 10000, running it overnight
+                State startState = sim.Simulate(null, new State(), false, false, false);
+
+                List<Tuple<double, Action[]>> progress = new List<Tuple<double, Action[]>>();
+                List<Tuple<double, Action[]>> solutions = new List<Tuple<double, Action[]>>();
+
+                List<Action> firstRoundActions = sim.Crafter.Actions.ToList();
+                Action[] temp = new Action[firstRoundActions.Count];
+                firstRoundActions.CopyTo(temp);
+                List<Action> otherActions = temp.ToList();
+                foreach (Action action in Atlas.Actions.FirstRoundActions) otherActions.Remove(action);
+                if (firstRoundActions.Count - otherActions.Count == Atlas.Actions.FirstRoundActions.Count())
+                    firstRoundActions = Atlas.Actions.FirstRoundActions.ToList();
+
+                foreach (Action action in firstRoundActions)
+                {
+                    if (action == Atlas.Actions.DummyAction) continue;
+                    Action[] actions = new Action[] { action };
+                    State finishState = sim.Simulate(actions, startState, false, false, false);
+                    attempts++;
+                    Tuple<double, bool> score = ScoreState(sim, finishState);
+                    if (score.Item1 > 0)
+                    {
+                        if (finishState.CheckViolations().ProgressOk)
+                        {
+                            solutions.Add(new Tuple<double, Action[]>(score.Item1, actions));
+                            if (score.Item2) goto foundPerfect;
+                        }
+                        else
+                        {
+                            progress.Add(new Tuple<double, Action[]>(score.Item1, actions));
+                        }
+                    }
+                }
+
+                for (int i = 0; i < sim.MaxLength; i++)
+                {
+                    double worstScore = double.MaxValue;
+                    List<Tuple<double, Action[]>> nextProgress = new List<Tuple<double, Action[]>>();
+                    foreach (var solution in progress)
+                    {
+                        foreach (var action in otherActions)
+                        {
+                            List<Action> steps = solution.Item2.ToList();
+                            steps.Add(action);
+                            if (steps.Contains(Atlas.Actions.DummyAction)) continue;
+                            var stepsArray = steps.ToArray();
+
+                            State finishState = sim.Simulate(stepsArray, startState, false, false, false);
+                            Tuple<double, bool> score = ScoreState(sim, finishState);
+                            attempts++;
+
+                            if (score.Item1 > 0)
+                            {
+                                if (finishState.CheckViolations().ProgressOk)
+                                {
+                                    solutions.Add(new Tuple<double, Action[]>(score.Item1, stepsArray));
+                                    if (score.Item2)
+                                        goto foundPerfect;
+                                }
+                                else if (nextProgress.Count() < solutionsToKeep)
+                                {
+                                    nextProgress.Add(new Tuple<double, Action[]>(score.Item1, stepsArray));
+                                    if (score.Item1 < worstScore) worstScore = score.Item1;
+                                }
+                                else if (score.Item1 > worstScore)
+                                {
+                                    nextProgress.RemoveAll(x => x.Item1 == worstScore);
+                                    nextProgress.Add(new Tuple<double, Action[]>(score.Item1, stepsArray));
+                                    worstScore = nextProgress.Min(x => x.Item1);
+                                }
+                            }
+                        }
+                    }
+                    progress = nextProgress;                
+                }
+
+                foundPerfect:
+                var bestScore = solutions.Max(y => y.Item1);
+                var found = solutions.Where(x => x.Item1 == bestScore);
+                var bestSolution = found.First().Item2;
+
+                State final = sim.Simulate(bestSolution, startState, false, true, true);
+                return bestSolution;
+            }
+            public Tuple<double, bool> ScoreState(Simulator sim, State state)
+            {
+                if (!state.CheckViolations().DurabilityOk || !state.CheckViolations().CpOk || !state.CheckViolations().TrickOk || state.WastedActions > 0) return new Tuple<double, bool>(-1, false);
+
+                double maxQuality = sim.Recipe.MaxQuality * 1.1;
+                double progress = state.Progress > sim.Recipe.Difficulty ? sim.Recipe.Difficulty : state.Progress;
+                double quality = state.Quality > maxQuality ? maxQuality : state.Quality;
+                bool perfectSolution = state.Quality >= sim.Recipe.MaxQuality && state.Progress > sim.Recipe.Difficulty;
+                return new Tuple<double, bool>(progress + quality + 2 * (sim.MaxLength - state.Step), perfectSolution);
             }
         }
     }
