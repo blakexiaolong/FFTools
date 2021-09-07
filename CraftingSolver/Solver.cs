@@ -302,7 +302,7 @@ namespace CraftingSolver
             public Action[] Run(Simulator sim, int maxTasks)
             {
                 ulong attempts = 0;
-                int solutionsToKeep = 80000; // was 10000, running it overnight
+                int solutionsToKeep = 50000; // was 10000, running it overnight
                 State startState = sim.Simulate(null, new State(), false, false, false);
 
                 List<Tuple<double, Action[]>> progress = new List<Tuple<double, Action[]>>();
@@ -312,9 +312,31 @@ namespace CraftingSolver
                 Action[] temp = new Action[firstRoundActions.Count];
                 firstRoundActions.CopyTo(temp);
                 List<Action> otherActions = temp.ToList();
-                foreach (Action action in Atlas.Actions.FirstRoundActions) otherActions.Remove(action);
-                if (firstRoundActions.Count - otherActions.Count == Atlas.Actions.FirstRoundActions.Count())
-                    firstRoundActions = Atlas.Actions.FirstRoundActions.ToList();
+                otherActions.Remove(Atlas.Actions.MastersMend);
+                otherActions.Remove(Atlas.Actions.TrainedEye);
+                otherActions.Remove(Atlas.Actions.Reflect);
+
+                Action[] correctSolution = new[] {
+                    Atlas.Actions.Reflect,
+                    Atlas.Actions.WasteNot2,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.Innovation,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.GreatStrides,
+                    Atlas.Actions.ByregotsBlessing,
+                    Atlas.Actions.Manipulation,
+                    Atlas.Actions.Veneration,
+                    Atlas.Actions.NameOfTheElements,
+                    Atlas.Actions.BrandOfTheElements,
+                    Atlas.Actions.BrandOfTheElements,
+                    Atlas.Actions.BrandOfTheElements,
+                    Atlas.Actions.Veneration,
+                    Atlas.Actions.Observe,
+                    Atlas.Actions.FocusedSynthesis,
+                    Atlas.Actions.BasicSynth
+                };
 
                 foreach (Action action in firstRoundActions)
                 {
@@ -337,7 +359,7 @@ namespace CraftingSolver
                     }
                 }
 
-                for (int i = 0; i < sim.MaxLength; i++)
+                for (int i = 1; i < sim.MaxLength; i++)
                 {
                     double worstScore = double.MaxValue;
                     List<Tuple<double, Action[]>> nextProgress = new List<Tuple<double, Action[]>>();
@@ -394,7 +416,7 @@ namespace CraftingSolver
                 double maxQuality = sim.Recipe.MaxQuality * 1.1;
                 double progress = state.Progress > sim.Recipe.Difficulty ? sim.Recipe.Difficulty : state.Progress;
                 double quality = state.Quality > maxQuality ? maxQuality : state.Quality;
-                bool perfectSolution = state.Quality >= sim.Recipe.MaxQuality && state.Progress > sim.Recipe.Difficulty;
+                bool perfectSolution = state.Quality >= sim.Recipe.MaxQuality && state.Progress >= sim.Recipe.Difficulty;
                 return new Tuple<double, bool>(progress + quality + 2 * (sim.MaxLength - state.Step), perfectSolution);
             }
         }
