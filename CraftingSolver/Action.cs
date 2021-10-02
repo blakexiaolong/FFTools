@@ -2,8 +2,18 @@
 
 namespace CraftingSolver
 {
+    public enum ActionType
+    {
+        CountUp,
+        CountDown,
+        Indefinite,
+        Immediate
+    };
+
     public class Action : System.IEquatable<Action>
     {
+        public int ID { get; set; } // used only for comparison - faster than string comparison on the name
+
         public string ShortName { get; set; }
         public string Name { get; set; }
         public int DurabilityCost { get; set; }
@@ -11,7 +21,7 @@ namespace CraftingSolver
         public double SuccessProbability { get; set; }
         public double QualityIncreaseMultiplier { get; set; }
         public double ProgressIncreaseMultiplier { get; set; }
-        public string ActionType { get; set; }
+        public ActionType ActionType { get; set; }
         public int ActiveTurns { get; set; }
         public string Class { get; set; }
         public int Level { get; set; }
@@ -19,7 +29,15 @@ namespace CraftingSolver
         public bool OnExcellent { get; set; }
         public bool OnPoor { get; set; }
 
-        public bool Equals(Action other) => ShortName == other.ShortName;
+        public static bool Equals(Action x, Action y)
+        {
+            if (x == default && y == default) return true;
+            else if (x == default || y == default) return false;
+            else return x.Equals(y);
+        }
+
+
+        public bool Equals(Action other) => ID == other.ID;
         public override string ToString() => $"{Name}";
     }
 }

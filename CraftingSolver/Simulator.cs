@@ -13,20 +13,19 @@ namespace CraftingSolver
         public double ReliabilityIndex { get; set; }
         public int MaxLength { get; set; }
 
-        public State Simulate(Action[] individual, State startState, bool assumeSuccess, bool verbose, bool debug)
+        public State Simulate(List<Action> actions, State startState, bool assumeSuccess, bool verbose, bool debug)
         {
             State s = startState.Clone();
             List<string> log = new List<string>();
 
             double pGood = ProbabilityGoodForSynth();
             double pExcellent = ProbabilityExcellentForSynth();
-            bool ignoreConditionReq = !UseConditions;
 
             double ppGood = 0, ppExcellent = 0, ppPoor = 0, ppNormal = 1 - (ppGood + ppExcellent + ppPoor);
 
-            if (individual == default || individual.Length == 0)
+            if (actions == default || actions.Count == 0)
             {
-                return NewStateFromSynth(ignoreConditionReq, ppExcellent, ppGood);
+                return NewStateFromSynth(!UseConditions, ppExcellent, ppGood);
             }
 
             if (debug)
@@ -40,41 +39,49 @@ namespace CraftingSolver
                 log.Add($"{s.Step:2} {"":30} {s.Durability:-5} {s.CP:-5} {s.Quality:-8} {s.Progress:-8} {0:5}");
             }
 
-            foreach (Action action in individual)
+            foreach (Action action in actions)
             {
                 s.Step++;
                 SimulatorStep r = ApplyModifiers(s, action);
 
-                double successProbability = assumeSuccess ? 1 : r.SuccessProbability;
-
-                double progressGain = r.BProgressGain;
-                if (progressGain > 0)
-                {
-                    s.Reliability *= successProbability;
-                }
-                progressGain = successProbability * Math.Floor(progressGain);
+                double progressGain, qualityGain, successProbability = assumeSuccess ? 1 : r.SuccessProbability;
 
                 double condQualityIncreaseMultiplier = 1;
-                if (!ignoreConditionReq)
+                if (UseConditions)
                 {
                     condQualityIncreaseMultiplier *= ppNormal + 1.5 * ppGood * Math.Pow((1 - ppGood * 2) / 2, MaxTrickUses) + 4 * ppExcellent + 0.5 * ppPoor;
                 }
-                double qualityGain = condQualityIncreaseMultiplier * r.BQualityGain;
-                qualityGain = successProbability * Math.Floor(qualityGain);
 
-                if (s.Action == Atlas.Actions.DummyAction && action != Atlas.Actions.DummyAction)
+                if (assumeSuccess || successProbability == 1)
+                {
+                    progressGain = Math.Floor(r.BProgressGain);
+                    qualityGain = Math.Floor(condQualityIncreaseMultiplier * r.BQualityGain);
+                }
+                else
+                {
+                    progressGain = r.BProgressGain;
+                    if (progressGain > 0)
+                    {
+                        s.Reliability *= successProbability;
+                    }
+                    progressGain = successProbability * Math.Floor(progressGain);
+
+                    qualityGain = successProbability * Math.Floor(condQualityIncreaseMultiplier * r.BQualityGain);
+                }
+
+                if (Action.Equals(s.Action, Atlas.Actions.DummyAction) && !action.Equals(Atlas.Actions.DummyAction))
                 {
                     s.WastedActions++;
                 }
 
-                if ((s.Progress >= Recipe.Difficulty || s.Durability <= 0 || s.CP < 0) && action != Atlas.Actions.DummyAction)
+                if ((s.Progress >= Recipe.Difficulty || s.Durability <= 0 || s.CP < 0) && !action.Equals(Atlas.Actions.DummyAction))
                 {
                     s.WastedActions++;
                 }
                 else
                 {
                     s.UpdateState(action, progressGain, qualityGain, r.DurabilityCost, r.CPCost, successProbability);
-                    if (ignoreConditionReq)
+                    if (UseConditions)
                     {
                         ppPoor = ppExcellent;
                         ppGood = pGood * ppNormal;
@@ -83,31 +90,34 @@ namespace CraftingSolver
                     }
                 }
 
-                double iq = 0;
-                if (s.CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet))
+                if (debug || verbose)
                 {
-                    iq = s.CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet).Turns;
-                }
+                    double iq = 0;
+                    if (s.CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet))
+                    {
+                        iq = s.CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet).Turns;
+                    }
 
-                if (debug)
-                {
-                    log.Add($"{s.Step:2} {action.Name:30} {s.Durability:5} {s.CP:5} {s.Quality:5} {s.Progress:8} {iq:8} {r.Control:5} {qualityGain:8} {Math.Floor(r.BProgressGain):5} {Math.Floor(r.BQualityGain):5} {s.WastedActions:5}");
-                }
-                else if (verbose)
-                {
-                    log.Add($"{s.Step:2} {action.Name:30} {s.Durability:-5} {s.CP:-5} {s.Quality:-8} {s.Progress:-8} {iq:5}");
+                    if (debug)
+                    {
+                        log.Add($"{s.Step:2} {action.Name:30} {s.Durability:5} {s.CP:5} {s.Quality:5} {s.Progress:8} {iq:8} {r.Control:5} {qualityGain:8} {Math.Floor(r.BProgressGain):5} {Math.Floor(r.BQualityGain):5} {s.WastedActions:5}");
+                    }
+                    else
+                    {
+                        log.Add($"{s.Step:2} {action.Name:30} {s.Durability:-5} {s.CP:-5} {s.Quality:-8} {s.Progress:-8} {iq:5}");
+                    }
                 }
 
                 s.Action = action;
             }
 
-            StateViolations check = s.CheckViolations();
             if (debug || verbose)
             {
+                StateViolations check = s.CheckViolations();
                 log.Add($"Progress Check: {check.ProgressOk}, Durability Check: {check.DurabilityOk}, CP Check: {check.CpOk}, Tricks Check: {check.TrickOk}, Reliability Check: {check.ReliabilityOk}, Wasted Actions: {s.WastedActions}");
             }
 
-            s.Action = individual[individual.Length - 1];
+            s.Action = actions[actions.Count - 1];
             return s;
         }
 
@@ -149,20 +159,18 @@ namespace CraftingSolver
             int originalLevelDifference = effectiveCrafterLevel - Recipe.Level;
             int pureLevelDifference = Crafter.Level - Recipe.Level;
 
-            if (state.CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet))
-            {
-                control += Convert.ToInt32(0.2 * state.CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet).Turns * Crafter.Control);
-            }
+            Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+            if (iq != default) control += Convert.ToInt32(0.2 * iq.Turns * Crafter.Control);
 
             double progressIncreaseMultiplier = CalcProgressMultiplier(state, action);
-            if (action == Atlas.Actions.MuscleMemory && state.Step != 1)
+            if (action.Equals(Atlas.Actions.MuscleMemory) && state.Step != 1)
             {
                 state.WastedActions++;
                 progressIncreaseMultiplier = 0;
                 cpCost = 0;
             }
             double bProgressGain = CalculateBaseProgressIncrease(levelDifference, Crafter.Craftsmanship) * action.ProgressIncreaseMultiplier * progressIncreaseMultiplier;
-            if (action == Atlas.Actions.FlawlessSynthesis)
+            if (action.Equals(Atlas.Actions.FlawlessSynthesis))
             {
                 bProgressGain = 40;
             }
@@ -170,7 +178,7 @@ namespace CraftingSolver
             double bQualityGain = CalculateBaseQualityIncrease(levelDifference, control) * action.QualityIncreaseMultiplier * qualityIncreaseMultiplier;
 
             // effects modifying quality gain directly
-            if (action == Atlas.Actions.TrainedEye)
+            if (action.Equals(Atlas.Actions.TrainedEye))
             {
                 if (state.Step == 1 && pureLevelDifference >= 10)
                 {
@@ -185,7 +193,7 @@ namespace CraftingSolver
             }
 
             // can only use Precise Touch if Good or Excellent
-            if (action == Atlas.Actions.PreciseTouch)
+            if (action.Equals(Atlas.Actions.PreciseTouch))
             {
                 if (state.Condition.CheckGoodOrExcellent())
                 {
@@ -193,15 +201,15 @@ namespace CraftingSolver
                 }
                 else
                 {
-                    state.WastedActions += 1;
+                    state.WastedActions++;
                     bQualityGain = 0;
                     cpCost = 0;
                 }
             }
 
-            if (action == Atlas.Actions.Reflect && state.Step != 1)
+            if (action.Equals(Atlas.Actions.Reflect) && state.Step != 1)
             {
-                state.WastedActions += 1;
+                state.WastedActions++;
                 control = 0;
                 bQualityGain = 0;
                 cpCost = 0;
@@ -209,11 +217,12 @@ namespace CraftingSolver
 
             // Effects modifying durability cost
             double durabilityCost = action.DurabilityCost;
-            if (state.CountDowns.Any(x => x.Action == Atlas.Actions.WasteNot) || state.CountDowns.Any(x => x.Action == Atlas.Actions.WasteNot2))
+            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.WasteNot) || x.Action.Equals(Atlas.Actions.WasteNot2)))
             {
-                if (action == Atlas.Actions.PrudentTouch)
+                if (action.Equals(Atlas.Actions.PrudentTouch))
                 {
                     bQualityGain = 0;
+                    state.WastedActions++;
                 }
                 else
                 {
@@ -236,33 +245,41 @@ namespace CraftingSolver
                 CPCost = cpCost
             };
         }
-        
+
         private double CalcSuccessProbability(State state, Action action)
         {
             double successProbability = action.SuccessProbability;
-            if ((action == Atlas.Actions.FocusedSynthesis || action == Atlas.Actions.FocusedTouch) && state.Action == Atlas.Actions.Observe)
+            if (action.Equals(Atlas.Actions.FocusedSynthesis) || action.Equals(Atlas.Actions.FocusedTouch))
             {
-                successProbability = 1;
+                if (Action.Equals(state.Action, Atlas.Actions.Observe))
+                {
+                    successProbability = 1;
+                }
+                else
+                {
+                    state.WastedActions++;
+                }
             }
             return Math.Min(successProbability, 1);
         }
         private double CalcProgressMultiplier(State state, Action action)
         {
             double progressIncreaseMultiplier = 1;
-            if(action.ProgressIncreaseMultiplier > 0 && state.CountDowns.Any(x => x.Action == Atlas.Actions.MuscleMemory))
+            Effect muMe = state.CountDowns.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.MuscleMemory));
+            if (action.ProgressIncreaseMultiplier > 0 && muMe != default)
             {
                 progressIncreaseMultiplier++;
-                state.CountDowns.RemoveAll(x => x.Action == Atlas.Actions.MuscleMemory);
+                state.CountDowns.Remove(muMe);
             }
-            if (action == Atlas.Actions.BrandOfTheElements && state.CountDowns.Any(x => x.Action == Atlas.Actions.NameOfTheElements))
+            if (action.Equals(Atlas.Actions.BrandOfTheElements) && state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.NameOfTheElements)))
             {
                 progressIncreaseMultiplier += state.CalcNameOfElementsBonus();
             }
-            if (state.CountDowns.Any(x => x.Action == Atlas.Actions.Veneration))
+            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Veneration)))
             {
                 progressIncreaseMultiplier += 0.5;
             }
-            if (action == Atlas.Actions.Groundwork && state.Durability < Atlas.Actions.Groundwork.DurabilityCost)
+            if (action.Equals(Atlas.Actions.Groundwork) && state.Durability < Atlas.Actions.Groundwork.DurabilityCost)
             {
                 progressIncreaseMultiplier *= 0.5;
             }
@@ -271,23 +288,25 @@ namespace CraftingSolver
         private double CalcQualityMultiplier(State state, Action action)
         {
             double qualityIncreaseMultiplier = 1;
-            if (state.CountDowns.Any(x => x.Action == Atlas.Actions.GreatStrides) && qualityIncreaseMultiplier > 0)
+            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.GreatStrides)) && qualityIncreaseMultiplier > 0)
             {
                 qualityIncreaseMultiplier += 1;
             }
-            if (state.CountDowns.Any(x => x.Action == Atlas.Actions.Innovation))
+            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Innovation)))
             {
                 qualityIncreaseMultiplier += 0.5;
             }
-            if (action == Atlas.Actions.ByregotsBlessing)
+            if (action.Equals(Atlas.Actions.ByregotsBlessing))
             {
-                if (state.CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet) && state.CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet).Turns >= 1)
+                Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+                if (iq != default && iq.Turns >= 1)
                 {
-                    qualityIncreaseMultiplier *= 1 + (0.2 * state.CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet).Turns);
+                    qualityIncreaseMultiplier *= 1 + (0.2 * iq.Turns);
                 }
                 else
                 {
                     qualityIncreaseMultiplier = 0;
+                    state.WastedActions++;
                 }
             }
             return qualityIncreaseMultiplier;
@@ -356,10 +375,9 @@ namespace CraftingSolver
 
         public int GetEffectiveCrafterLevel()
         {
-            int effectiveCrafterLevel = Crafter.Level;
-            if (Atlas.LevelTable.ContainsKey(Crafter.Level))
+            if (!Atlas.LevelTable.TryGetValue(Crafter.Level, out int effectiveCrafterLevel))
             {
-                effectiveCrafterLevel = Atlas.LevelTable[Crafter.Level];
+                effectiveCrafterLevel = Crafter.Level;
             }
             return effectiveCrafterLevel;
         }

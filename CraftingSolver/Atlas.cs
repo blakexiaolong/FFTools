@@ -8,6 +8,7 @@ namespace CraftingSolver
         {
             public static Action Observe = new Action
             {
+                ID = 1,
                 ShortName = "observe",
                 Name = "Observe",
                 DurabilityCost = 0,
@@ -15,7 +16,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 13,
@@ -25,6 +26,7 @@ namespace CraftingSolver
             };
             public static Action BasicSynth = new Action
             {
+                ID = 2,
                 ShortName = "basicSynth",
                 Name = "Basic Synthesis",
                 DurabilityCost = 10,
@@ -32,7 +34,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 1.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 1,
@@ -40,25 +42,9 @@ namespace CraftingSolver
                 OnExcellent = false,
                 OnPoor = false
             };
-            public static Action BasicSynth2 = new Action
-            {
-                ShortName = "basicSynth2",
-                Name = "Basic Synthesis 2",
-                DurabilityCost = 10,
-                CPCost = 0,
-                SuccessProbability = 1.0,
-                QualityIncreaseMultiplier = 0.0,
-                ProgressIncreaseMultiplier = 1.2,
-                ActionType = "immediate",
-                ActiveTurns = 1,
-                Class = "All",
-                Level = 31,
-                OnGood = false,
-                OnExcellent = false,
-                OnPoor = false
-            };
             public static Action CarefulSynthesis = new Action
             {
+                ID = 4,
                 ShortName = "carefulSynthesis",
                 Name = "Careful Synthesis",
                 DurabilityCost = 10,
@@ -66,7 +52,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 1.5,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 62,
@@ -76,6 +62,7 @@ namespace CraftingSolver
             };
             public static Action RapidSynthesis = new Action
             {
+                ID = 5,
                 ShortName = "rapidSynthesis",
                 Name = "Rapid Synthesis",
                 DurabilityCost = 10,
@@ -83,7 +70,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.5,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 2.5,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 9,
@@ -93,6 +80,7 @@ namespace CraftingSolver
             };
             public static Action FlawlessSynthesis = new Action
             {
+                ID = 6,
                 ShortName = "flawlessSynthesis",
                 Name = "Flawless Synthesis",
                 DurabilityCost = 10,
@@ -100,7 +88,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.9,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 1.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 37,
@@ -110,6 +98,7 @@ namespace CraftingSolver
             };
             public static Action BasicTouch = new Action
             {
+                ID = 7,
                 ShortName = "basicTouch",
                 Name = "Basic Touch",
                 DurabilityCost = 10,
@@ -117,7 +106,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 5,
@@ -127,6 +116,7 @@ namespace CraftingSolver
             };
             public static Action StandardTouch = new Action
             {
+                ID = 8,
                 ShortName = "standardTouch",
                 Name = "Standard Touch",
                 DurabilityCost = 10,
@@ -134,7 +124,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.25,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 18,
@@ -144,6 +134,7 @@ namespace CraftingSolver
             };
             public static Action HastyTouch = new Action
             {
+                ID = 9,
                 ShortName = "hastyTouch",
                 Name = "Hasty Touch",
                 DurabilityCost = 10,
@@ -151,7 +142,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.6,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 9,
@@ -161,6 +152,7 @@ namespace CraftingSolver
             };
             public static Action ByregotsBlessing = new Action
             {
+                ID = 10,
                 ShortName = "byregotsBlessing",
                 Name = "Byregot's Blessing",
                 DurabilityCost = 10,
@@ -168,7 +160,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 50,
@@ -178,6 +170,7 @@ namespace CraftingSolver
             };
             public static Action MastersMend = new Action
             {
+                ID = 11,
                 ShortName = "mastersMend",
                 Name = "Master's Mend",
                 DurabilityCost = 0,
@@ -185,7 +178,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 7,
@@ -195,6 +188,7 @@ namespace CraftingSolver
             };
             public static Action TricksOfTheTrade = new Action
             {
+                ID = 12,
                 ShortName = "tricksOfTheTrade",
                 Name = "Tricks of the Trade",
                 DurabilityCost = 0,
@@ -202,7 +196,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 13,
@@ -212,6 +206,7 @@ namespace CraftingSolver
             };
             public static Action InnerQuiet = new Action
             {
+                ID = 13,
                 ShortName = "innerQuiet",
                 Name = "Inner Quiet",
                 DurabilityCost = 0,
@@ -219,7 +214,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countup",
+                ActionType = ActionType.CountUp,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 11,
@@ -229,6 +224,7 @@ namespace CraftingSolver
             };
             public static Action Manipulation = new Action
             {
+                ID = 14,
                 ShortName = "manipulation",
                 Name = "Manipulation",
                 DurabilityCost = 0,
@@ -236,7 +232,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 8,
                 Class = "All",
                 Level = 65,
@@ -246,6 +242,7 @@ namespace CraftingSolver
             };
             public static Action WasteNot = new Action
             {
+                ID = 15,
                 ShortName = "wasteNot",
                 Name = "Waste Not",
                 DurabilityCost = 0,
@@ -253,7 +250,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 4,
                 Class = "All",
                 Level = 15,
@@ -263,6 +260,7 @@ namespace CraftingSolver
             };
             public static Action WasteNot2 = new Action
             {
+                ID = 16,
                 ShortName = "wasteNot2",
                 Name = "Waste Not II",
                 DurabilityCost = 0,
@@ -270,7 +268,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 8,
                 Class = "All",
                 Level = 47,
@@ -280,6 +278,7 @@ namespace CraftingSolver
             };
             public static Action Veneration = new Action
             {
+                ID = 17,
                 ShortName = "veneration",
                 Name = "Veneration",
                 DurabilityCost = 0,
@@ -287,7 +286,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 4,
                 Class = "All",
                 Level = 15,
@@ -297,6 +296,7 @@ namespace CraftingSolver
             };
             public static Action Innovation = new Action
             {
+                ID = 18,
                 ShortName = "innovation",
                 Name = "Innovation",
                 DurabilityCost = 0,
@@ -304,7 +304,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 4,
                 Class = "All",
                 Level = 26,
@@ -314,6 +314,7 @@ namespace CraftingSolver
             };
             public static Action GreatStrides = new Action
             {
+                ID = 19,
                 ShortName = "greatStrides",
                 Name = "Great Strides",
                 DurabilityCost = 0,
@@ -321,7 +322,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 3,
                 Class = "All",
                 Level = 21,
@@ -331,6 +332,7 @@ namespace CraftingSolver
             };
             public static Action PreciseTouch = new Action
             {
+                ID = 20,
                 ShortName = "preciseTouch",
                 Name = "Precise Touch",
                 DurabilityCost = 10,
@@ -338,7 +340,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.5,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 53,
@@ -348,6 +350,7 @@ namespace CraftingSolver
             };
             public static Action MuscleMemory = new Action
             {
+                ID = 21,
                 ShortName = "muscleMemory",
                 Name = "Muscle Memory",
                 DurabilityCost = 10,
@@ -355,7 +358,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 3.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 5,
                 Class = "All",
                 Level = 54,
@@ -365,6 +368,7 @@ namespace CraftingSolver
             };
             public static Action BrandOfTheElements = new Action
             {
+                ID = 22,
                 ShortName = "brandOfTheElements",
                 Name = "Brand of the Elements",
                 DurabilityCost = 10,
@@ -372,7 +376,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 1.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 37,
@@ -382,6 +386,7 @@ namespace CraftingSolver
             };
             public static Action NameOfTheElements = new Action
             {
+                ID = 23,
                 ShortName = "nameOfTheElements",
                 Name = "Name of the Elements",
                 DurabilityCost = 0,
@@ -389,7 +394,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "countdown",
+                ActionType = ActionType.CountDown,
                 ActiveTurns = 3,
                 Class = "All",
                 Level = 37,
@@ -399,6 +404,7 @@ namespace CraftingSolver
             };
             public static Action RapidSynthesis2 = new Action
             {
+                ID = 24,
                 ShortName = "rapidSynthesis2",
                 Name = "Rapid Synthesis",
                 DurabilityCost = 10,
@@ -406,7 +412,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.5,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 5.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 63,
@@ -416,6 +422,7 @@ namespace CraftingSolver
             };
             public static Action PatientTouch = new Action
             {
+                ID = 25,
                 ShortName = "patientTouch",
                 Name = "Patient Touch",
                 DurabilityCost = 10,
@@ -423,7 +430,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.5,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 64,
@@ -433,6 +440,7 @@ namespace CraftingSolver
             };
             public static Action PrudentTouch = new Action
             {
+                ID = 26,
                 ShortName = "prudentTouch",
                 Name = "Prudent Touch",
                 DurabilityCost = 5,
@@ -440,7 +448,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 66,
@@ -450,6 +458,7 @@ namespace CraftingSolver
             };
             public static Action FocusedSynthesis = new Action
             {
+                ID = 27,
                 ShortName = "focusedSynthesis",
                 Name = "Focused Synthesis",
                 DurabilityCost = 10,
@@ -457,7 +466,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.5,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 2.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 67,
@@ -467,6 +476,7 @@ namespace CraftingSolver
             };
             public static Action FocusedTouch = new Action
             {
+                ID = 28,
                 ShortName = "focusedTouch",
                 Name = "Focused Touch",
                 DurabilityCost = 10,
@@ -474,7 +484,7 @@ namespace CraftingSolver
                 SuccessProbability = 0.5,
                 QualityIncreaseMultiplier = 1.5,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 68,
@@ -484,6 +494,7 @@ namespace CraftingSolver
             };
             public static Action Reflect = new Action
             {
+                ID = 29,
                 ShortName = "reflect",
                 Name = "Reflect",
                 DurabilityCost = 10,
@@ -491,7 +502,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 69,
@@ -501,6 +512,7 @@ namespace CraftingSolver
             };
             public static Action PreparatoryTouch = new Action
             {
+                ID = 30,
                 ShortName = "preparatoryTouch",
                 Name = "Preparatory Touch",
                 DurabilityCost = 20,
@@ -508,7 +520,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 2.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 71,
@@ -518,6 +530,7 @@ namespace CraftingSolver
             };
             public static Action Groundwork = new Action
             {
+                ID = 31,
                 ShortName = "groundwork",
                 Name = "Groundwork",
                 DurabilityCost = 20,
@@ -525,7 +538,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 3.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 72,
@@ -535,6 +548,7 @@ namespace CraftingSolver
             };
             public static Action DelicateSynthesis = new Action
             {
+                ID = 32,
                 ShortName = "delicateSynthesis",
                 Name = "Delicate Synthesis",
                 DurabilityCost = 10,
@@ -542,7 +556,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 1.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 76,
@@ -552,6 +566,7 @@ namespace CraftingSolver
             };
             public static Action IntensiveSynthesis = new Action
             {
+                ID = 33,
                 ShortName = "intensiveSynthesis",
                 Name = "Intensive Synthesis",
                 DurabilityCost = 10,
@@ -559,7 +574,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 3.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 78,
@@ -569,6 +584,7 @@ namespace CraftingSolver
             };
             public static Action TrainedEye = new Action
             {
+                ID = 34,
                 ShortName = "trainedEye",
                 Name = "Trained Eye",
                 DurabilityCost = 10,
@@ -576,7 +592,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 80,
@@ -586,6 +602,7 @@ namespace CraftingSolver
             };
             public static Action DummyAction = new Action
             {
+                ID = 0,
                 ShortName = "dummyAction",
                 Name = "______________",
                 DurabilityCost = 0,
@@ -593,7 +610,7 @@ namespace CraftingSolver
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
-                ActionType = "immediate",
+                ActionType = ActionType.Immediate,
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 1,
@@ -673,6 +690,36 @@ namespace CraftingSolver
                 MuscleMemory,
                 TrainedEye,
                 Reflect
+            };
+            public static Action[] ProgressActions = new Action[]
+            {
+                BasicSynth,
+                CarefulSynthesis,
+                NameOfTheElements,
+                FocusedSynthesis,
+                DelicateSynthesis
+            };
+            public static Action[] Buffs = new Action[]
+            {
+                Observe,
+                Manipulation,
+                WasteNot,
+                WasteNot2,
+                Veneration,
+                Innovation,
+                GreatStrides
+            };
+            public static Action[] QualityActions = new Action[]
+            {
+                BasicTouch,
+                StandardTouch,
+                HastyTouch,
+                ByregotsBlessing,
+                PreciseTouch,
+                PatientTouch,
+                PrudentTouch,
+                FocusedTouch,
+                PreparatoryTouch
             };
         };
         public static Dictionary<int, int> LevelTable = new Dictionary<int, int>

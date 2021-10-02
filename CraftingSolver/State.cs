@@ -84,39 +84,40 @@ namespace CraftingSolver
             }
             else
             {
-                WastedActions += 1;
+                WastedActions++;
                 return false;
             }
         }
         public void ApplySpecialActionEffects(Action action)
         {
-            if (action == Atlas.Actions.MastersMend)
+            if (action.Equals(Atlas.Actions.MastersMend))
             {
                 Durability += 30;
             }
 
-            if (CountDowns.Any(x => x.Action == Atlas.Actions.Manipulation && Durability > 0 && action != Atlas.Actions.Manipulation))
+            if (CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Manipulation) && Durability > 0 && action != Atlas.Actions.Manipulation))
             {
                 Durability += 5;
             }
 
-            if (action == Atlas.Actions.ByregotsBlessing)
+            if (action.Equals(Atlas.Actions.ByregotsBlessing))
             {
-                if (CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet))
+                Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+                if (iq != default)
                 {
-                    CountUps.RemoveAll(x => x.Action == Atlas.Actions.InnerQuiet);
+                    CountUps.Remove(iq);
                 }
                 else
                 {
-                    WastedActions += 1;
+                    WastedActions++;
                 }
             }
 
-            if (action == Atlas.Actions.Reflect)
+            if (action.Equals(Atlas.Actions.Reflect))
             {
                 if (Step == 1)
                 {
-                    Effect iq = CountUps.FirstOrDefault(x => x.Action == Atlas.Actions.InnerQuiet);
+                    Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
                     if (iq == default)
                     {
                         CountUps.Add(new Effect { Action = Atlas.Actions.InnerQuiet, Turns = 2 });
@@ -128,33 +129,24 @@ namespace CraftingSolver
                 }
                 else
                 {
-                    WastedActions += 1;
+                    WastedActions++;
                 }
             }
 
-            if (action.QualityIncreaseMultiplier > 0 && CountDowns.Any(x => x.Action == Atlas.Actions.GreatStrides))
+            if (action.QualityIncreaseMultiplier > 0 && CountDowns.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.GreatStrides)) != default)
             {
-                CountDowns.RemoveAll(x => x.Action == Atlas.Actions.GreatStrides);
+                CountDowns.RemoveAll(x => x.Action.Equals(Atlas.Actions.GreatStrides));
             }
 
             if (action.OnExcellent || action.OnGood)
             {
                 if (UseConditionalAction())
                 {
-                    if (action == Atlas.Actions.TricksOfTheTrade)
+                    if (action.Equals(Atlas.Actions.TricksOfTheTrade))
                     {
                         CP += 20 * Condition.PGoodOrExcellent();
                     }
                 }
-            }
-
-            if (action == Atlas.Actions.Veneration && CountDowns.Any(x => x.Action == Atlas.Actions.Veneration))
-            {
-                WastedActions += 1;
-            }
-            if (action == Atlas.Actions.Innovation && CountDowns.Any(x => x.Action == Atlas.Actions.Innovation))
-            {
-                WastedActions += 1;
             }
         }
 
@@ -166,20 +158,20 @@ namespace CraftingSolver
             }
             CountDowns.RemoveAll(x => x.Turns == 0);
 
-            if (CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet))
+            Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+            if (iq != default)
             {
                 // conditional IQ countups
-                Effect iq = CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet);
-                if (action == Atlas.Actions.PatientTouch)
+                if (action.Equals(Atlas.Actions.PatientTouch))
                 {
                     iq.Turns = Convert.ToInt32((iq.Turns * 2 * successProbability) + (iq.Turns / 2 * (1 - successProbability)));
 
                 }
-                else if (action == Atlas.Actions.PreparatoryTouch)
+                else if (action.Equals(Atlas.Actions.PreparatoryTouch))
                 {
                     iq.Turns += 2;
                 }
-                else if (action == Atlas.Actions.PreciseTouch && Condition.CheckGoodOrExcellent())
+                else if (action.Equals(Atlas.Actions.PreciseTouch) && Condition.CheckGoodOrExcellent())
                 {
                     iq.Turns += 2 * successProbability * Condition.PGoodOrExcellent();
                 }
@@ -193,7 +185,7 @@ namespace CraftingSolver
 
             switch (action.ActionType)
             {
-                case "countup":
+                case ActionType.CountUp:
                     Effect countup = CountUps.FirstOrDefault(x => x.Action == action);
                     if (countup == default)
                     {
@@ -204,10 +196,10 @@ namespace CraftingSolver
                         countup.Turns = 0;
                     }
                     break;
-                case "indefinite":
+                case ActionType.Indefinite:
                     Indefinites.Add(new Effect { Action = action, Turns = 1 });
                     break;
-                case "countdown":
+                case ActionType.CountDown:
                     if (action == Atlas.Actions.NameOfTheElements)
                     {
                         if (NameOfElementUses == 0)
@@ -226,7 +218,7 @@ namespace CraftingSolver
                         }
                         else
                         {
-                            WastedActions += 1;
+                            WastedActions++;
                         }
                     }
                     else
@@ -242,7 +234,7 @@ namespace CraftingSolver
                         }
                     }
                     break;
-                case "immediate":
+                case ActionType.Immediate:
                     break;
                 default:
                     throw new InvalidOperationException($"Action Type {action.ActionType} was unrecognized");

@@ -19,21 +19,8 @@
         public double PPExcellent { get; set; }
         public ConditionQuality ConditionQuality { get; set; }
 
-        public bool CheckGoodOrExcellent()
-        {
-            return true;
-        }
-        public double PGoodOrExcellent()
-        {
-            if (IgnoreConditions)
-            {
-                return 1;
-            }
-            else
-            {
-                return PPGood + PPExcellent;
-            }
-        }
+        public bool CheckGoodOrExcellent() => IgnoreConditions || ConditionQuality == ConditionQuality.Good || ConditionQuality == ConditionQuality.Excellent;
+        public double PGoodOrExcellent() => IgnoreConditions ? 1 : PPGood + PPExcellent;
     }
 
 }
