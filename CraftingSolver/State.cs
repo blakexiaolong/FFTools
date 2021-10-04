@@ -31,6 +31,22 @@ namespace CraftingSolver
         public int BQualityGain { get; set; }
         public bool Success => Progress >= Simulator.Recipe.Difficulty;
 
+        #region WastedCounter
+        public Dictionary<string, int> WastedCounter = new Dictionary<string, int>
+        {
+            { "BadConditional", 0 },
+            { "BBWithoutIQ", 0 },
+            { "NonFirstTurn", 0 },
+            { "Nameless", 0 },
+            { "NonDummyAfterDummy", 0 },
+            { "OverProgress", 0 },
+            { "OutOfDurability", 0 },
+            { "OutOfCP", 0 },
+            { "PrudentUnderWasteNot", 0 },
+            { "Unfocused", 0 },
+        };
+        #endregion
+
         public State()
         {
             CountDowns = new List<Effect>();
@@ -85,6 +101,7 @@ namespace CraftingSolver
             else
             {
                 WastedActions++;
+                WastedCounter["BadConditional"]++;
                 return false;
             }
         }
@@ -110,6 +127,7 @@ namespace CraftingSolver
                 else
                 {
                     WastedActions++;
+                    WastedCounter["BBWithoutIQ"]++;
                 }
             }
 
@@ -130,6 +148,7 @@ namespace CraftingSolver
                 else
                 {
                     WastedActions++;
+                    WastedCounter["NonFirstTurn"]++;
                 }
             }
 
@@ -213,12 +232,13 @@ namespace CraftingSolver
                             {
                                 nameOfBuff.Turns = action.ActiveTurns;
                             }
-                            
+
                             NameOfElementUses += 1;
                         }
                         else
                         {
                             WastedActions++;
+                            WastedCounter["Nameless"] ++;
                         }
                     }
                     else

@@ -8,6 +8,7 @@ namespace CraftingSolver
     public class Solver
     {
         private readonly int maxTasks = 60;
+
         static Recipe neoIshgardian = new Recipe
         {
             Level = 480,
@@ -31,18 +32,30 @@ namespace CraftingSolver
             Stars = 4
         };
 
-        private readonly Simulator sim = new Simulator
+        static Crafter unbuffed = new Crafter
+        {
+            Class = "Armorer",
+            Craftsmanship = 2737,
+            Control = 2810,
+            CP = 548,
+            Level = 80,
+            Specialist = false,
+            Actions = Atlas.Actions.DependableActions
+        };
+        static Crafter chiliCrabCunning = new Crafter
+        {
+            Class = "Armorer",
+            Craftsmanship = 2737,
+            Control = 2880,
+            CP = 636,
+            Level = 80,
+            Specialist = false,
+            Actions = Atlas.Actions.DependableActions
+        };
+
+    private readonly Simulator sim = new Simulator
         {            
-            Crafter = new Crafter
-            {
-                Class = "Armorer",
-                Craftsmanship = 2737,
-                Control = 2810,
-                CP = 548,
-                Level = 80,
-                Specialist = false,
-                Actions = Atlas.Actions.DependableActions
-            },
+            Crafter = chiliCrabCunning,
             Recipe = exarchic,
             MaxTrickUses = 0,
             UseConditions = false,
@@ -55,7 +68,6 @@ namespace CraftingSolver
             List<Action> solution;
             try
             {
-                //var solution = new BruteForceSolver3().Run(sim, maxTasks);
                 solution = new BruteForceSolver3().Run(sim, maxTasks);
             }
             catch (Exception e)
@@ -73,12 +85,24 @@ namespace CraftingSolver
             List<Action> Run(Simulator sim, int maxTasks);
         }
 
-
         public static Tuple<double, bool> ScoreState(Simulator sim, State state)
         {
             var violations = state.CheckViolations();
             if (state.Reliability != 1 || state.WastedActions > 0 || !violations.DurabilityOk || !violations.CpOk || !violations.TrickOk)
+            {
+                foreach (var kvp in state.WastedCounter)
+                {
+                    if (!wastedDict.ContainsKey(kvp.Key))
+                    {
+                        wastedDict.Add(kvp.Key, kvp.Value);
+                    }
+                    else
+                    {
+                        wastedDict[kvp.Key] += kvp.Value;
+                    }
+                }
                 return new Tuple<double, bool>(-1, false);
+            }
             bool perfectSolution = state.Quality >= sim.Recipe.MaxQuality && state.Progress >= sim.Recipe.Difficulty;
             double maxQuality = sim.Recipe.MaxQuality * 1.1;
             double progress = (state.Progress > sim.Recipe.Difficulty ? sim.Recipe.Difficulty : state.Progress) / sim.Recipe.Difficulty;
@@ -90,72 +114,180 @@ namespace CraftingSolver
             return new Tuple<double, bool>(progress + quality + 2 * (sim.MaxLength - state.Step), perfectSolution);
         }
 
+        static Dictionary<string, int> wastedDict = new Dictionary<string, int>();
+        static Dictionary<string, int> auditDict = new Dictionary<string, int>
+        {
+            {  "AuditRepeatBuffs", 0 },
+            {  "AuditCP", 0 },
+            {  "AuditDurability", 0 },
+            {  "AuditUnfocused", 0 },
+            {  "AuditBBWithoutIQ", 0 },
+            {  "AuditInnerQuiet", 0 },
+        };
+
         public class BruteForceSolver3 : ISolver
         {
             #region Audits
-            public delegate bool Audit(List<Action> actions, List<Action> crafterActions);
+            public delegate bool Audit(Simulator sim, List<Action> actions, List<Action> crafterActions);
             public static Audit[] audits = new Audit[]
             {
-                AuditInnerQuiet,
+                AuditDurability,
+                AuditUnfocused,
+                AuditCP,
                 AuditRepeatBuffs,
-                AuditFocused,
-                AuditBrand,
-                AuditQualityAfterByregots
+                AuditBBWithoutIQ,
+                AuditInnerQuiet,
             };
 
-            public static bool AuditInnerQuiet(List<Action> actions, List<Action> crafterActions)
-            {
-                int iqCount = actions.Count(x => x.Equals(Atlas.Actions.InnerQuiet) || x.Equals(Atlas.Actions.Reflect));
-                switch (iqCount)
-                {
-                    case 0: return !actions.Any(x => x.Equals(Atlas.Actions.ByregotsBlessing));
-                    case 1: return true;
-                    default: return false;
-                }
-            }
-            public static bool AuditRepeatBuffs(List<Action> actions, List<Action> crafterActions)
-            {
-                return actions.Count < 2 || !(actions[0].Equals(actions[1]) && Atlas.Actions.Buffs.Contains(actions[0]));
-            }
-            public static bool AuditBrand(List<Action> actions, List<Action> crafterActions)
+            public static bool AuditBrand(Simulator sim, List<Action> actions, List<Action> crafterActions)
             {
                 bool brands = actions.Any(x => x.Equals(Atlas.Actions.BrandOfTheElements));
                 switch (actions.Count(x => x.Equals(Atlas.Actions.NameOfTheElements)))
                 {
                     case 0:
-                        if (brands) return false;
+                        if (brands)
+                        {
+                            auditDict["AuditBrand"]++;
+                            return false;
+                        }
                         break;
                     case 1:
                         int nameIx = actions.IndexOf(Atlas.Actions.NameOfTheElements);
                         List<int> brandIxs = GetIndices(actions, Atlas.Actions.BrandOfTheElements);
-                        if (brandIxs.Any(x => x - nameIx > 3 || x - nameIx < 1)) return false;
+                        if (brandIxs.Any(x => x - nameIx > 3 || x - nameIx < 1))
+                        {
+                            auditDict["AuditBrand"]++;
+                            return false;
+                        }
                         break;
                     default:
+                        auditDict["AuditBrand"]++;
                         return false;
                 }
                 return true;
             }
-            public static bool AuditFocused(List<Action> actions, List<Action> crafterActions)
-            {
-                for (int i = 0; i < actions.Count; i++)
-                {
-                    Action action = actions[i];
-                    if (action.Equals(Atlas.Actions.FocusedSynthesis) || action.Equals(Atlas.Actions.FocusedTouch))
-                    {
-                        if (i - 1 < 0 || !actions[i - 1].Equals(Atlas.Actions.Observe)) return false;
-                    }
-                }
-                return true;
-            }
-            public static bool AuditQualityAfterByregots(List<Action> actions, List<Action> crafterActions)
+            public static bool AuditQualityAfterByregots(Simulator sim, List<Action> actions, List<Action> crafterActions)
             {
                 int bbIx = actions.IndexOf(Atlas.Actions.ByregotsBlessing);
                 if (bbIx >= 0)
                 {
                     for (int i = bbIx + 1; i < actions.Count; i++)
                     {
-                        if (Atlas.Actions.QualityActions.Contains(actions[i])) return false;
+                        if (Atlas.Actions.QualityActions.Contains(actions[i]))
+                        {
+                            auditDict["AuditQualityAfterByregots"]++;
+                            return false;
+                        }
                     }
+                }
+                return true;
+            }
+
+            public static bool AuditUnfocused(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions[actions.Count - 1].Equals(Atlas.Actions.FocusedSynthesis) || actions[actions.Count - 1].Equals(Atlas.Actions.FocusedTouch))
+                {
+                    if (actions.Count < 2)
+                    {
+                        auditDict["AuditUnfocused"]++;
+                        return false;
+                    }
+                    if (actions[actions.Count - 2].Equals(Atlas.Actions.Observe))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        auditDict["AuditUnfocused"]++;
+                        return false;
+                    }
+                }
+                return true;
+            }
+            public static bool AuditRepeatBuffs(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions.Count < 2 || !(actions[actions.Count - 1].Equals(actions[actions.Count - 2]) && Atlas.Actions.Buffs.Contains(actions[actions.Count - 1])))
+                {
+                    return true;
+                }
+                else
+                {
+                    auditDict["AuditRepeatBuffs"]++;
+                    return false;
+                }
+            }
+            public static bool AuditInnerQuiet(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions.Count(x => x.Equals(Atlas.Actions.InnerQuiet) || x.Equals(Atlas.Actions.Reflect)) < 2)
+                {
+                    return true;
+                }
+                auditDict["AuditInnerQuiet"]++;
+                return false;
+            }
+            public static bool AuditCP(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions.Sum(x => x.CPCost) > sim.Crafter.CP)
+                {
+                    auditDict["AuditCP"]++;
+                    return false;
+                }
+                return true;
+            }
+            public static bool AuditDurability(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                int dur = sim.Recipe.Durability;
+                int manipTurns = 0;
+                foreach (Action action in actions)
+                {
+                    if (dur <= 0)
+                    {
+                        auditDict["AuditDurability"]++;
+                        return false;
+                    }
+
+                    if (action.Equals(Atlas.Actions.Groundwork) && dur < action.DurabilityCost) dur -= 10;
+                    else if (action.DurabilityCost > 0) dur -= action.DurabilityCost;
+                    else if (action.Equals(Atlas.Actions.MastersMend)) dur = Math.Min(sim.Recipe.Durability, dur + 30);
+
+                    if (action.Equals(Atlas.Actions.Manipulation)) manipTurns = 8;
+                    else if (manipTurns > 0 && dur > 0)
+                    {
+                        dur = Math.Min(sim.Recipe.Durability, dur + 5);
+                        manipTurns--;
+                    }
+                }
+                return true;
+            }
+            public static bool AuditBBWithoutIQ(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions.Last().Equals(Atlas.Actions.ByregotsBlessing))
+                {
+                    if (actions.Count(x => x.Equals(Atlas.Actions.ByregotsBlessing)) > 1)
+                    {
+                        auditDict["AuditBBWithoutIQ"]++;
+                        return false;
+                    }
+                    int lastIqIx = Math.Max(actions.LastIndexOf(Atlas.Actions.InnerQuiet), actions.LastIndexOf(Atlas.Actions.Reflect));
+
+                    if (lastIqIx < 0)
+                    {
+                        auditDict["AuditBBWithoutIQ"]++;
+                        return false;
+                    }
+                    else if (lastIqIx == actions.Count - 2)
+                    {
+                        auditDict["AuditBBWithoutIQ"]++;
+                        return false;
+                    }
+                    else
+                    {
+                        if (!actions.Skip(lastIqIx + 1).Take(actions.Count - 2).Any(x => Atlas.Actions.QualityActions.Contains(x)))
+                        {
+                            auditDict["AuditBBWithoutIQ"]++;
+                            return false;
+                        }
+                    };
                 }
                 return true;
             }
@@ -171,7 +303,7 @@ namespace CraftingSolver
             }
             #endregion
 
-            public static bool SolutionAudit(List<Action> actions, List<Action> crafterActions) => audits.All(audit => audit(actions, crafterActions));
+            public static bool SolutionAudit(Simulator sim, List<Action> actions, List<Action> crafterActions) => audits.All(audit => audit(sim, actions, crafterActions));
 
             public List<Action> Run(Simulator sim, int maxTasks)
             {
@@ -200,7 +332,7 @@ namespace CraftingSolver
                 {
                     if (action == Atlas.Actions.DummyAction) continue;
                     List<Action> actions = new List<Action> { action };
-                    if (!SolutionAudit(actions, firstRoundActions))
+                    if (!SolutionAudit(sim, actions, firstRoundActions))
                     {
                         auditFail++;
                         continue;
@@ -235,7 +367,7 @@ namespace CraftingSolver
                             steps.Add(action);
                             if (steps.Contains(Atlas.Actions.DummyAction)) continue;
 
-                            if (!SolutionAudit(steps, otherActions))
+                            if (!SolutionAudit(sim, steps, otherActions))
                             {
                                 auditFail++;
                                 continue;

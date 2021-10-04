@@ -18,7 +18,9 @@ namespace ModManager.ViewModels
         public void GetModData(string url) => ModData = new ModDataViewModel(url);
         public List<Mod> ModImport(int selectedIndex)
         {
-            string dirPath = Path.Combine(Default.ModImportPath, Directories[selectedIndex]);
+            string dirPath;
+            if (selectedIndex == -1) dirPath = Default.ModImportPath;
+            else dirPath = Path.Combine(Default.ModImportPath, Directories[selectedIndex]);
             return ModData.Import(dirPath);
         }
     }

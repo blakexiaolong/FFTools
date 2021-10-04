@@ -33,7 +33,7 @@ namespace ModManager.Models
             using (WebClient client = new WebClient())
             {
                 client.Encoding = Encoding.UTF8;
-                //client.Headers.Add(HttpRequestHeader.Cookie, Properties.Settings.Default.SessionCookie);
+                client.Headers.Add(HttpRequestHeader.Cookie, Properties.Settings.Default.SessionCookie);
                 try
                 {
                     doc.LoadHtml(client.DownloadString(Url));
@@ -86,6 +86,7 @@ namespace ModManager.Models
         public List<Mod> Import(string dirPath)
         {
             bool openedExplorer = false;
+            NukeInvalidDirChars();
             string filesPath = Path.Combine(dirPath, Name);
             Directory.CreateDirectory(filesPath);
 
@@ -120,6 +121,11 @@ namespace ModManager.Models
 
             return importedMods;
         }
+        public void NukeInvalidDirChars()
+        {
+            char[] invalidChars = Path.GetInvalidPathChars();
+            foreach (char c in invalidChars) Name = Name.Replace(c, '_');
+        }
 
         private void DownloadFiles(WebClient client, string filesPath, Dictionary<string, string> files, bool showBox, ref bool openedExplorer)
         {
@@ -128,7 +134,7 @@ namespace ModManager.Models
             {
                 if (file.Value.StartsWith(Properties.Settings.Default.XMAUrl))
                 {
-                    client.DownloadFile(file.Value, Path.Combine(filesPath, $"{counter}.{Path.GetExtension(file.Value)}"));
+                    client.DownloadFile(file.Value, Path.Combine(filesPath, $"{counter}{Path.GetExtension(file.Value)}"));
                 }
                 else
                 {

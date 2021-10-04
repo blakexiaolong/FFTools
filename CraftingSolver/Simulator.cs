@@ -72,11 +72,23 @@ namespace CraftingSolver
                 if (Action.Equals(s.Action, Atlas.Actions.DummyAction) && !action.Equals(Atlas.Actions.DummyAction))
                 {
                     s.WastedActions++;
+                    s.WastedCounter["NonDummyAfterDummy"]++;
                 }
 
-                if ((s.Progress >= Recipe.Difficulty || s.Durability <= 0 || s.CP < 0) && !action.Equals(Atlas.Actions.DummyAction))
+                if (s.Progress >= Recipe.Difficulty && !action.Equals(Atlas.Actions.DummyAction))
                 {
                     s.WastedActions++;
+                    s.WastedCounter["OverProgress"]++;
+                }
+                else if(s.Durability <= 0 && !action.Equals(Atlas.Actions.DummyAction))
+                {
+                    s.WastedActions++;
+                    s.WastedCounter["OutOfDurability"]++;
+                }
+                else if (s.CP < 0 && !action.Equals(Atlas.Actions.DummyAction))
+                {
+                    s.WastedActions++;
+                    s.WastedCounter["OutOfCP"]++;
                 }
                 else
                 {
@@ -166,6 +178,7 @@ namespace CraftingSolver
             if (action.Equals(Atlas.Actions.MuscleMemory) && state.Step != 1)
             {
                 state.WastedActions++;
+                state.WastedCounter["NonFirstTurn"]++;
                 progressIncreaseMultiplier = 0;
                 cpCost = 0;
             }
@@ -187,6 +200,7 @@ namespace CraftingSolver
                 else
                 {
                     state.WastedActions++;
+                    state.WastedCounter["NonFirstTurn"]++;
                     bQualityGain = 0;
                     cpCost = 0;
                 }
@@ -202,6 +216,7 @@ namespace CraftingSolver
                 else
                 {
                     state.WastedActions++;
+                    state.WastedCounter["BadConditional"]++;
                     bQualityGain = 0;
                     cpCost = 0;
                 }
@@ -210,6 +225,7 @@ namespace CraftingSolver
             if (action.Equals(Atlas.Actions.Reflect) && state.Step != 1)
             {
                 state.WastedActions++;
+                state.WastedCounter["NonFirstTurn"]++;
                 control = 0;
                 bQualityGain = 0;
                 cpCost = 0;
@@ -223,6 +239,7 @@ namespace CraftingSolver
                 {
                     bQualityGain = 0;
                     state.WastedActions++;
+                    state.WastedCounter["PrudentUnderWasteNot"]++;
                 }
                 else
                 {
@@ -258,6 +275,7 @@ namespace CraftingSolver
                 else
                 {
                     state.WastedActions++;
+                    state.WastedCounter["Unfocused"]++;
                 }
             }
             return Math.Min(successProbability, 1);
@@ -307,6 +325,7 @@ namespace CraftingSolver
                 {
                     qualityIncreaseMultiplier = 0;
                     state.WastedActions++;
+                    state.WastedCounter["BBWithoutIQ"]++;
                 }
             }
             return qualityIncreaseMultiplier;
