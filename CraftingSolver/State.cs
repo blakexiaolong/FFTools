@@ -31,7 +31,6 @@ namespace CraftingSolver
         public int BQualityGain { get; set; }
         public bool Success => Progress >= Simulator.Recipe.Difficulty;
 
-        #region WastedCounter
         public Dictionary<string, int> WastedCounter = new Dictionary<string, int>
         {
             { "BadConditional", 0 },
@@ -45,7 +44,6 @@ namespace CraftingSolver
             { "PrudentUnderWasteNot", 0 },
             { "Unfocused", 0 },
         };
-        #endregion
 
         public State()
         {
@@ -291,6 +289,23 @@ namespace CraftingSolver
                 TrickOk = TrickUses <= Simulator.MaxTrickUses,
                 ReliabilityOk = Reliability >= Simulator.ReliabilityIndex
             };
+        }
+
+        public int BuffDuration(Action buff)
+        {
+            switch (buff.ActionType)
+            {
+                case ActionType.CountDown:
+                    return Convert.ToInt32(CountDowns.FirstOrDefault(x => x.Action.Equals(buff))?.Turns);
+                case ActionType.CountUp:
+                    return Convert.ToInt32(CountUps.FirstOrDefault(x => x.Action.Equals(buff))?.Turns);
+                case ActionType.Immediate:
+                    return Action.Equals(buff) ? 1 : 0;
+                case ActionType.Indefinite:
+                    return Convert.ToInt32(Indefinites.FirstOrDefault(x => x.Action.Equals(buff))?.Turns);
+                default:
+                    throw new Exception("Action Type not recognized");
+            }
         }
     }
 }

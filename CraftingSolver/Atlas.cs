@@ -658,32 +658,35 @@ namespace CraftingSolver
             };
             public static Action[] DependableActions = new Action[]
             {
-                Observe,
-                BasicSynth,
                 CarefulSynthesis,
-                BasicTouch,
+                DelicateSynthesis,
+                Groundwork,
+                FocusedSynthesis,
+                NameOfTheElements,
+                BasicSynth,
+
+                FocusedTouch,
+                PreparatoryTouch,
                 StandardTouch,
                 ByregotsBlessing,
-                MastersMend,
-                InnerQuiet,
+                PrudentTouch,
+                BasicTouch,
+
                 Manipulation,
-                WasteNot,
-                WasteNot2,
+                MastersMend,
+
                 Veneration,
                 Innovation,
                 GreatStrides,
-                MuscleMemory,
                 BrandOfTheElements,
-                NameOfTheElements,
-                PrudentTouch,
-                FocusedSynthesis,
-                FocusedTouch,
+                InnerQuiet,
+                Observe,
+                WasteNot,
+                WasteNot2,
+
+                MuscleMemory,
                 Reflect,
-                PreparatoryTouch,
-                Groundwork,
-                DelicateSynthesis,
-                TrainedEye,
-                DummyAction
+                TrainedEye
             };
             public static Action[] FirstRoundActions = new Action[]
             {
