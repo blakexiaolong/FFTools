@@ -1,13 +1,17 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
+using Windows.Foundation;
+using Windows.System.Threading;
 
 namespace CraftingSolver
 {
     public class Solver
     {
-        private readonly int maxTasks = 60;
+        private readonly int maxTasks = 20;
 
         static Recipe neoIshgardian = new Recipe
         {
@@ -737,7 +741,7 @@ namespace CraftingSolver
                                 finishState = sim.Simulate(steps, startState, true, false, false);
                                 score = ScoreState(sim, finishState);
                                 attempts++;
-                            }                            
+                            }
 
                             if (score.Item1 > 0)
                             {
@@ -997,8 +1001,8 @@ namespace CraftingSolver
             const int MAX_GENERATION = 50;
             const int ELITE_PERCENTAGE = 10;
             const int MATE_PERCENTAGE = 50;
-            const int INITIAL_POPULATION = 100000000; // 100 million
-            const int GENERATION_SIZE = 500000; // 500 thousand
+            const int INITIAL_POPULATION = 5000000; // 5 million
+            const int GENERATION_SIZE = 300000; // 300 thousand
             const int PROB_MUTATION = 15;
 
             Random rand = new Random();
@@ -1007,7 +1011,7 @@ namespace CraftingSolver
 
             public class ListComparer : IComparer<KeyValuePair<double, List<Action>>>
             {
-                int IComparer<KeyValuePair<double, List<Action>>>.Compare(KeyValuePair<double, List<Action>> x, KeyValuePair<double, List<Action>> y) => (int)(x.Key - y.Key);
+                int IComparer<KeyValuePair<double, List<Action>>>.Compare(KeyValuePair<double, List<Action>> x, KeyValuePair<double, List<Action>> y) => (int)(y.Key - x.Key);
             }
 
             public static Tuple<double, bool> ScoreState(Simulator sim, State state)
@@ -1108,13 +1112,13 @@ namespace CraftingSolver
                 return res;
             }
 
-            public Action MutateGene() => genes[rand.Next(genes.Length - 1)];
-            public List<Action> CreateChromosome(int length)
+            public Action MutateGene(Random r) => genes[r.Next(genes.Length - 1)];
+            public List<Action> CreateChromosome(int length, Random r)
             {
                 List<Action> actions = new List<Action>();
                 for (int i = 0; i < length; i++)
                 {
-                    Action action = MutateGene();
+                    Action action = MutateGene(r);
                     actions.Add(action);
                     if (action.Equals(Atlas.Actions.DummyAction)) break;
                 }
@@ -1130,9 +1134,9 @@ namespace CraftingSolver
                     Action action;
                     int r = rand.Next(100);
 
-                    if (r <= probParentX) action = parent1.Count-1 > i ? parent2[i] : parent1[i];
+                    if (r <= probParentX) action = parent1.Count - 1 > i ? parent2[i] : parent1[i];
                     else if (r <= probParentX * 2) action = parent2.Count - 1 > i ? parent1[i] : parent2[i];
-                    else action = MutateGene();
+                    else action = MutateGene(rand);
 
                     actions.Add(action);
                     if (action.Equals(Atlas.Actions.DummyAction)) break;
@@ -1141,15 +1145,24 @@ namespace CraftingSolver
                 return actions;
             }
 
-            public void BuildPopulation(List<List<Action>> population, int maxLength)
+            public void BuildPopulation(ConcurrentBag<List<Action>> population, int maxLength, int maxTasks)
             {
                 var genesList = genes.ToList();
-                for (int i = 0; i < INITIAL_POPULATION; i++)
+                Task[] actions = new Task[maxTasks];
+                for (int i = 0; i < actions.Length; i++)
                 {
-                    var chromosome = CreateChromosome(maxLength);
-                    if (!SolutionAudit(chromosome, genesList)) continue;
-                    population.Add(chromosome);
+                    actions[i] = ThreadPool.RunAsync((workItem) =>
+                    {
+                        Random r = new Random(rand.Next() % (i + 1));
+                        for (int x = 0; x < INITIAL_POPULATION; x += maxTasks)
+                        {
+                            var chromosome = CreateChromosome(maxLength, r);
+                            if (!SolutionAudit(chromosome, genesList)) continue;
+                            population.Add(chromosome);
+                        }
+                    }).AsTask();
                 }
+                Task.WaitAll(actions);
             }
 
             public List<Action> Run(Simulator sim, int maxTasks)
@@ -1162,63 +1175,79 @@ namespace CraftingSolver
 
                 int maxLength = sim.MaxLength;
                 State startState = sim.Simulate(null, new State(), true, false, false);
-                List<List<Action>> population = new List<List<Action>>();
+
+                ConcurrentBag<List<Action>> population = new ConcurrentBag<List<Action>>();
+                object lockObj = new object();
+                bool foundPerfect = false;
+                List<Action> perfect = new List<Action>();
 
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
-                BuildPopulation(population, maxLength);
+                BuildPopulation(population, maxLength, maxTasks);
 
                 while (true)
                 {
-                    if (population.Count == 0)
-                        BuildPopulation(population, maxLength);
-                    List<KeyValuePair<double, List<Action>>> scoredPopulation = new List<KeyValuePair<double, List<Action>>>();
-                    foreach (List<Action> chromosome in population)
+                    GC.Collect();
+                    if (population.Count == 0) BuildPopulation(population, maxLength, maxTasks);
+
+                    ConcurrentBag<KeyValuePair<double, List<Action>>> scoredPopulation = new ConcurrentBag<KeyValuePair<double, List<Action>>>();
+                    Task[] actions = new Task[maxTasks];
+                    for (int i = 0; i < actions.Length; i++)
                     {
-                        State state = sim.Simulate(chromosome, startState, false, false, false);
-                        Tuple<double, bool> score = ScoreState(sim, state);
-                        if (score.Item1 > 0)
+                        actions[i] = ThreadPool.RunAsync((workItem) =>
                         {
-                            if (state.CheckViolations().ProgressOk)
+                            while (!foundPerfect && population.TryTake(out List<Action> chromosome))
                             {
-                                if (score.Item2) return chromosome;
+                                State state = sim.Simulate(chromosome, startState, false, false, false);
+                                Tuple<double, bool> score = ScoreState(sim, state);
+                                if (score.Item1 > 0)
+                                {
+                                    if (state.CheckViolations().ProgressOk && score.Item2)
+                                    {
+                                        foundPerfect = true;
+                                        perfect = chromosome;
+                                        continue;
+                                    }
+                                    scoredPopulation.Add(new KeyValuePair<double, List<Action>>(score.Item1, chromosome));
+                                }
                             }
-                            scoredPopulation.Add(new KeyValuePair<double, List<Action>>(score.Item1, chromosome));
+                        }).AsTask();
+                    }
+                    Task.WaitAll(actions);
+
+                    if (foundPerfect)
+                        return perfect;
+
+                    population = new ConcurrentBag<List<Action>>();
+                    List<KeyValuePair<double, List<Action>>> scores = scoredPopulation.ToList();
+                    scores.Sort(comparer);
+                    if (generation == MAX_GENERATION)
+                        return scores.First().Value;
+                    scores.RemoveAll(x => x.Key == -1);
+
+                    if (scores.Any())
+                    {
+                        var best = scores.First();
+
+                        // take top percent of population
+                        int populationSize = Math.Min(GENERATION_SIZE, scores.Count);
+                        int eliteCount = (int)Math.Ceiling(populationSize * ((double)ELITE_PERCENTAGE / 100));
+                        IEnumerable<List<Action>> elites = scores.Take(eliteCount).Select(x => x.Value);
+                        foreach (List<Action> elite in elites) population.Add(elite);
+
+                        // mate next percent of population
+                        int mateCount = (int)Math.Ceiling(populationSize * ((double)MATE_PERCENTAGE / 100));
+                        List<List<Action>> matingPool = scores.Take(mateCount).Select(x => x.Value).ToList();
+                        for (int i = eliteCount; i < GENERATION_SIZE; i++)
+                        {
+                            List<Action> parent1 = matingPool[rand.Next(mateCount - 1)];
+                            List<Action> parent2 = matingPool[rand.Next(mateCount - 1)];
+                            var chromosome = Mate(parent1, parent2);
+                            if (!SolutionAudit(chromosome, genesList)) continue;
+                            population.Add(chromosome);
                         }
                     }
-
-                    scoredPopulation.Sort(comparer);
-                    if (generation == MAX_GENERATION)
-                        return scoredPopulation.Last().Value;
-                    scoredPopulation.RemoveAll(x => x.Key == -1);
-                    if (scoredPopulation.Count == 0)
-                    {
-                        generation++;
-                        continue;
-                    }
-
-                    var best = scoredPopulation.Last();
-                    List<List<Action>> newGeneration = new List<List<Action>>();
-
-                    // take top percent of population
-                    int populationSize = Math.Min(GENERATION_SIZE, scoredPopulation.Count);
-                    int eliteCount = (int)Math.Ceiling(populationSize * ((double)ELITE_PERCENTAGE / 100));
-                    newGeneration.AddRange(scoredPopulation.Skip(populationSize - eliteCount).Select(x => x.Value));
-
-                    // mate next percent of population
-                    int mateCount = (int)Math.Ceiling(populationSize * ((double)MATE_PERCENTAGE / 100));
-                    List<List<Action>> matingPool = scoredPopulation.Skip(populationSize - mateCount).Select(x => x.Value).ToList();
-                    for (int i = 0; i < 300000 - eliteCount; i++)
-                    {
-                        List<Action> parent1 = matingPool[rand.Next(mateCount - 1)];
-                        List<Action> parent2 = matingPool[rand.Next(mateCount - 1)];
-                        var chromosome = Mate(parent1, parent2);
-                        if (!SolutionAudit(chromosome, genesList)) continue;
-                        newGeneration.Add(chromosome);
-                    }
-
-                    population = newGeneration;
                     generation++;
                 }
             }
