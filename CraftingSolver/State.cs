@@ -43,6 +43,7 @@ namespace CraftingSolver
             { "OutOfCP", 0 },
             { "PrudentUnderWasteNot", 0 },
             { "Unfocused", 0 },
+            { "UntrainedFinesse", 0 }
         };
 
         public State()
@@ -80,13 +81,6 @@ namespace CraftingSolver
                 BProgressGain = BProgressGain,
                 BQualityGain = BQualityGain
             };
-        }
-
-        public double CalcNameOfElementsBonus()
-        {
-            double percentComplete = Math.Floor((double)Progress / Simulator.Recipe.Difficulty * 100);
-            double bonus = 2 * (100 - percentComplete) / 100;
-            return Math.Min(2, Math.Max(0, bonus));
         }
 
         public bool UseConditionalAction()
@@ -133,15 +127,7 @@ namespace CraftingSolver
             {
                 if (Step == 1)
                 {
-                    Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
-                    if (iq == default)
-                    {
-                        CountUps.Add(new Effect { Action = Atlas.Actions.InnerQuiet, Turns = 2 });
-                    }
-                    else
-                    {
-                        iq.Turns = 2;
-                    }
+                    CountUps.Add(new Effect { Action = Atlas.Actions.InnerQuiet, Turns = 1 });
                 }
                 else
                 {
@@ -169,7 +155,7 @@ namespace CraftingSolver
 
         public void UpdateEffectCounters(Action action, double successProbability)
         {
-            foreach(Effect effect in CountDowns)
+            foreach (Effect effect in CountDowns)
             {
                 effect.Turns -= 1;
             }
@@ -179,12 +165,7 @@ namespace CraftingSolver
             if (iq != default)
             {
                 // conditional IQ countups
-                if (action.Equals(Atlas.Actions.PatientTouch))
-                {
-                    iq.Turns = Convert.ToInt32((iq.Turns * 2 * successProbability) + (iq.Turns / 2 * (1 - successProbability)));
-
-                }
-                else if (action.Equals(Atlas.Actions.PreparatoryTouch))
+                if (action.Equals(Atlas.Actions.PreparatoryTouch))
                 {
                     iq.Turns += 2;
                 }
@@ -192,7 +173,7 @@ namespace CraftingSolver
                 {
                     iq.Turns += 2 * successProbability * Condition.PGoodOrExcellent();
                 }
-                else if (action.QualityIncreaseMultiplier > 0 && action != Atlas.Actions.Reflect)
+                else if (action.QualityIncreaseMultiplier > 0)
                 {
                     iq.Turns += Convert.ToInt32(1 * successProbability);
                 }
@@ -217,39 +198,14 @@ namespace CraftingSolver
                     Indefinites.Add(new Effect { Action = action, Turns = 1 });
                     break;
                 case ActionType.CountDown:
-                    if (action == Atlas.Actions.NameOfTheElements)
+                    Effect countdown = CountDowns.FirstOrDefault(x => x.Action == action);
+                    if (countdown == default)
                     {
-                        if (NameOfElementUses == 0)
-                        {
-                            Effect nameOfBuff = CountDowns.FirstOrDefault(x => x.Action == Atlas.Actions.NameOfTheElements);
-                            if (nameOfBuff == default)
-                            {
-                                CountDowns.Add(new Effect { Action = Atlas.Actions.NameOfTheElements, Turns = action.ActiveTurns });
-                            }
-                            else
-                            {
-                                nameOfBuff.Turns = action.ActiveTurns;
-                            }
-
-                            NameOfElementUses += 1;
-                        }
-                        else
-                        {
-                            WastedActions++;
-                            WastedCounter["Nameless"] ++;
-                        }
+                        CountDowns.Add(new Effect { Action = action, Turns = action.ActiveTurns });
                     }
                     else
                     {
-                        Effect countdown = CountDowns.FirstOrDefault(x => x.Action == action);
-                        if (countdown == default)
-                        {
-                            CountDowns.Add(new Effect { Action = action, Turns = action.ActiveTurns });
-                        }
-                        else
-                        {
-                            countdown.Turns = action.ActiveTurns;
-                        }
+                        countdown.Turns = action.ActiveTurns;
                     }
                     break;
                 case ActionType.Immediate:
@@ -257,8 +213,7 @@ namespace CraftingSolver
                 default:
                     throw new InvalidOperationException($"Action Type {action.ActionType} was unrecognized");
             }
-
-        }        
+        }    
         public void UpdateState(Action action, double progressGain, double qualityGain, double durabilityCost, int cpCost, double successProbability)
         {
             Progress += progressGain;
@@ -271,10 +226,6 @@ namespace CraftingSolver
             UpdateEffectCounters(action, successProbability);
 
             // Sanity Checking
-            if (Durability >= -5 && Progress >= Simulator.Recipe.Difficulty)
-            {
-                Durability = 0;
-            }
             Durability = Math.Min(Durability, Simulator.Recipe.Durability);
             CP = Math.Min(CP, Simulator.Crafter.CP + BonusMaxCP);
         }

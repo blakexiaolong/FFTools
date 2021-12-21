@@ -210,7 +210,7 @@ namespace CraftingSolver
                 ShortName = "innerQuiet",
                 Name = "Inner Quiet",
                 DurabilityCost = 0,
-                CPCost = 18,
+                CPCost = 0,
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 0.0,
                 ProgressIncreaseMultiplier = 0.0,
@@ -366,42 +366,6 @@ namespace CraftingSolver
                 OnExcellent = false,
                 OnPoor = false
             };
-            public static Action BrandOfTheElements = new Action
-            {
-                ID = 22,
-                ShortName = "brandOfTheElements",
-                Name = "Brand of the Elements",
-                DurabilityCost = 10,
-                CPCost = 6,
-                SuccessProbability = 1.0,
-                QualityIncreaseMultiplier = 0.0,
-                ProgressIncreaseMultiplier = 1.0,
-                ActionType = ActionType.Immediate,
-                ActiveTurns = 1,
-                Class = "All",
-                Level = 37,
-                OnGood = false,
-                OnExcellent = false,
-                OnPoor = false
-            };
-            public static Action NameOfTheElements = new Action
-            {
-                ID = 23,
-                ShortName = "nameOfTheElements",
-                Name = "Name of the Elements",
-                DurabilityCost = 0,
-                CPCost = 30,
-                SuccessProbability = 1.0,
-                QualityIncreaseMultiplier = 0.0,
-                ProgressIncreaseMultiplier = 0.0,
-                ActionType = ActionType.CountDown,
-                ActiveTurns = 3,
-                Class = "All",
-                Level = 37,
-                OnGood = false,
-                OnExcellent = false,
-                OnPoor = false
-            };
             public static Action RapidSynthesis2 = new Action
             {
                 ID = 24,
@@ -416,24 +380,6 @@ namespace CraftingSolver
                 ActiveTurns = 1,
                 Class = "All",
                 Level = 63,
-                OnGood = false,
-                OnExcellent = false,
-                OnPoor = false
-            };
-            public static Action PatientTouch = new Action
-            {
-                ID = 25,
-                ShortName = "patientTouch",
-                Name = "Patient Touch",
-                DurabilityCost = 10,
-                CPCost = 6,
-                SuccessProbability = 0.5,
-                QualityIncreaseMultiplier = 1.0,
-                ProgressIncreaseMultiplier = 0.0,
-                ActionType = ActionType.Immediate,
-                ActiveTurns = 1,
-                Class = "All",
-                Level = 64,
                 OnGood = false,
                 OnExcellent = false,
                 OnPoor = false
@@ -498,7 +444,7 @@ namespace CraftingSolver
                 ShortName = "reflect",
                 Name = "Reflect",
                 DurabilityCost = 10,
-                CPCost = 24,
+                CPCost = 6,
                 SuccessProbability = 1.0,
                 QualityIncreaseMultiplier = 1.0,
                 ProgressIncreaseMultiplier = 0.0,
@@ -600,6 +546,60 @@ namespace CraftingSolver
                 OnExcellent = false,
                 OnPoor = false
             };
+            public static Action TrainedFinesse = new Action
+            {
+                ID = 35,
+                ShortName = "trainedFinesse",
+                Name = "Trained Finesse",
+                DurabilityCost = 0,
+                CPCost = 32,
+                SuccessProbability = 1.0,
+                QualityIncreaseMultiplier = 1.0,
+                ProgressIncreaseMultiplier = 0,
+                ActionType = ActionType.Immediate,
+                ActiveTurns = 1,
+                Class = "All",
+                Level = 90,
+                OnGood = false,
+                OnExcellent = false,
+                OnPoor = false
+            };
+            public static Action PrudentSynthesis = new Action
+            {
+                ID = 36,
+                ShortName = "prudentSynthesis",
+                Name = "Prudent Synthesis",
+                DurabilityCost = 5,
+                CPCost = 18,
+                SuccessProbability = 1.0,
+                QualityIncreaseMultiplier = 0,
+                ProgressIncreaseMultiplier = 1.8,
+                ActionType = ActionType.Immediate,
+                ActiveTurns = 1,
+                Class = "All",
+                Level = 88,
+                OnGood = false,
+                OnExcellent = false,
+                OnPoor = false
+            };
+            public static Action AdvancedTouch = new Action
+            {
+                ID = 37,
+                ShortName = "advancedTouch",
+                Name = "Advanced Touch",
+                DurabilityCost = 10,
+                CPCost = 46,
+                SuccessProbability = 100,
+                QualityIncreaseMultiplier = 1.5,
+                ProgressIncreaseMultiplier = 0,
+                ActionType = ActionType.Immediate,
+                ActiveTurns = 1,
+                Class = "All",
+                Level = 84,
+                OnGood = false,
+                OnExcellent = false,
+                OnPoor = false
+            };
             public static Action DummyAction = new Action
             {
                 ID = 0,
@@ -641,10 +641,7 @@ namespace CraftingSolver
                 GreatStrides,
                 PreciseTouch,
                 MuscleMemory,
-                BrandOfTheElements,
-                NameOfTheElements,
                 RapidSynthesis2,
-                PatientTouch,
                 PrudentTouch,
                 FocusedSynthesis,
                 FocusedTouch,
@@ -662,7 +659,6 @@ namespace CraftingSolver
                 DelicateSynthesis,
                 Groundwork,
                 FocusedSynthesis,
-                NameOfTheElements,
                 BasicSynth,
 
                 FocusedTouch,
@@ -678,8 +674,6 @@ namespace CraftingSolver
                 Veneration,
                 Innovation,
                 GreatStrides,
-                BrandOfTheElements,
-                InnerQuiet,
                 Observe,
                 WasteNot,
                 WasteNot2,
@@ -698,7 +692,6 @@ namespace CraftingSolver
             {
                 BasicSynth,
                 CarefulSynthesis,
-                NameOfTheElements,
                 FocusedSynthesis,
                 DelicateSynthesis
             };
@@ -719,11 +712,30 @@ namespace CraftingSolver
                 HastyTouch,
                 ByregotsBlessing,
                 PreciseTouch,
-                PatientTouch,
                 PrudentTouch,
                 FocusedTouch,
-                PreparatoryTouch
+                PreparatoryTouch,
+                DelicateSynthesis,
+                TrainedFinesse,
+                AdvancedTouch
             };
+
+            public static void UpgradeActionsByLevel(int level)
+            {
+                if (level >= 82)
+                {
+                    Action a = CarefulSynthesis;
+                    a.ProgressIncreaseMultiplier = 1.8;
+                    CarefulSynthesis = a;
+                }
+
+                if (level >= 86)
+                {
+                    Action a = Groundwork;
+                    a.ProgressIncreaseMultiplier = 3.6;
+                    Groundwork = a;
+                }
+            }
         };
         public static Dictionary<int, int> LevelTable = new Dictionary<int, int>
         {
@@ -756,7 +768,17 @@ namespace CraftingSolver
             { 77, 412 },
             { 78, 415 },
             { 79, 418 },
-            { 80, 420 }
+            { 80, 420 },
+            { 81, 530 },
+            { 82, 535 },
+            { 83, 540 },
+            { 84, 543 },
+            { 85, 546 },
+            { 86, 549 },
+            { 87, 552 },
+            { 88, 555 },
+            { 89, 558 },
+            { 90, 560 }
         };
         public static Dictionary<string, Dictionary<int, double>> LevelDifferenceFactors = new Dictionary<string, Dictionary<int, double>>
         {
@@ -813,7 +835,36 @@ namespace CraftingSolver
                     { 17, 1 },
                     { 18, 1 },
                     { 19, 1 },
-                    { 20, 1 }
+                    { 20, 1 },
+                    { 21, 1 },
+                    { 22, 1 },
+                    { 23, 1 },
+                    { 24, 1 },
+                    { 25, 1 },
+                    { 26, 1 },
+                    { 27, 1 },
+                    { 28, 1 },
+                    { 29, 1 },
+                    { 30, 1 },
+                    { 31, 1 },
+                    { 32, 1 },
+                    { 33, 1 },
+                    { 34, 1 },
+                    { 35, 1 },
+                    { 36, 1 },
+                    { 37, 1 },
+                    { 38, 1 },
+                    { 39, 1 },
+                    { 40, 1 },
+                    { 41, 1 },
+                    { 42, 1 },
+                    { 43, 1 },
+                    { 44, 1 },
+                    { 45, 1 },
+                    { 46, 1 },
+                    { 47, 1 },
+                    { 48, 1 },
+                    { 49, 1 }
                 }
             },
             {
@@ -865,11 +916,40 @@ namespace CraftingSolver
                     { 13, 1.41 },
                     { 14, 1.43 },
                     { 15, 1.45 },
-                    { 16, 1.46 },
+                    { 16, 1.47 },
                     { 17, 1.47 },
                     { 18, 1.48 },
                     { 19, 1.49 },
-                    { 20, 1.5 }
+                    { 20, 1.5 },
+                    { 21, 1.5 },
+                    { 22, 1.5 },
+                    { 23, 1.5 },
+                    { 24, 1.5 },
+                    { 25, 1.5 },
+                    { 26, 1.5 },
+                    { 27, 1.5 },
+                    { 28, 1.5 },
+                    { 29, 1.5 },
+                    { 30, 1.5 },
+                    { 31, 1.5 },
+                    { 32, 1.5 },
+                    { 33, 1.5 },
+                    { 34, 1.5 },
+                    { 35, 1.5 },
+                    { 36, 1.5 },
+                    { 37, 1.5 },
+                    { 38, 1.5 },
+                    { 39, 1.5 },
+                    { 40, 1.5 },
+                    { 41, 1.5 },
+                    { 42, 1.5 },
+                    { 43, 1.5 },
+                    { 44, 1.5 },
+                    { 45, 1.5 },
+                    { 46, 1.5 },
+                    { 47, 1.5 },
+                    { 48, 1.5 },
+                    { 49, 1.5 },
                 }
             }
         };

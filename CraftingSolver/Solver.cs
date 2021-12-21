@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.Foundation;
 using Windows.System.Threading;
 
 namespace CraftingSolver
@@ -33,7 +32,34 @@ namespace CraftingSolver
             MaxQuality = 56662,
             SuggestedCraftsmanship = 2620,
             SuggestedControl = 2540,
-            Stars = 4
+            Stars = 4,
+        };
+
+        static Recipe newNeoIshgardian = new Recipe
+        {
+            Level = 480,
+            Difficulty = 2800,
+            Durability = 70,
+            StartQuality = 0,
+            MaxQuality = 8500,
+            SuggestedCraftsmanship = 2480,
+            SuggestedControl = 2195,
+            Stars = 3
+        };
+        static Recipe newExarchic = new Recipe
+        {
+            Level = 510,
+            Difficulty = 3600,
+            Durability = 70,
+            StartQuality = 0,
+            MaxQuality = 9500,
+            SuggestedCraftsmanship = 2620,
+            SuggestedControl = 2540,
+            Stars = 4,
+            ProgressDivider = 110,
+            QualityDivider = 90,
+            ProgressModifier = 0.8,
+            QualityModifier = 0.7
         };
 
         static Crafter unbuffed = new Crafter
@@ -60,7 +86,7 @@ namespace CraftingSolver
         private readonly Simulator sim = new Simulator
         {
             Crafter = chiliCrabCunning,
-            Recipe = exarchic,
+            Recipe = newExarchic,
             MaxTrickUses = 0,
             UseConditions = false,
             ReliabilityIndex = 1,
@@ -72,6 +98,7 @@ namespace CraftingSolver
             List<Action> solution;
             try
             {
+                sim.Initialize();
                 solution = new GeneticSolver().Run(sim, maxTasks);
             }
             catch (Exception e)
@@ -112,10 +139,6 @@ namespace CraftingSolver
             double progress = (state.Progress > sim.Recipe.Difficulty ? sim.Recipe.Difficulty : state.Progress) / sim.Recipe.Difficulty;
             double quality = (state.Quality > maxQuality ? maxQuality : state.Quality) / sim.Recipe.MaxQuality;
             return new Tuple<double, bool>((progress + quality) * 100, perfectSolution);
-
-            progress = (state.Progress > sim.Recipe.Difficulty ? sim.Recipe.Difficulty : state.Progress);
-            quality = (state.Quality > maxQuality ? maxQuality : state.Quality);
-            return new Tuple<double, bool>(progress + quality + 2 * (sim.MaxLength - state.Step), perfectSolution);
         }
 
         static ulong attempts = 0, chainAuditFail = 0, auditFail = 0, simFail = 0;
@@ -154,7 +177,6 @@ namespace CraftingSolver
                 AuditRepeatBuffs,
                 AuditBBWithoutIQ,
                 AuditInnerQuiet,
-                AuditBrand,
                 AuditQualityAfterByregots
             };
             public static Audit[] solutionAudits = new Audit[]
@@ -268,33 +290,6 @@ namespace CraftingSolver
                             return false;
                         }
                     };
-                }
-                return true;
-            }
-            public static bool AuditBrand(Simulator sim, List<Action> actions, List<Action> crafterActions)
-            {
-                bool brands = actions.Any(x => x.Equals(Atlas.Actions.BrandOfTheElements));
-                switch (actions.Count(x => x.Equals(Atlas.Actions.NameOfTheElements)))
-                {
-                    case 0:
-                        if (brands)
-                        {
-                            auditDict["AuditBrand"]++;
-                            return false;
-                        }
-                        break;
-                    case 1:
-                        int nameIx = actions.IndexOf(Atlas.Actions.NameOfTheElements);
-                        List<int> brandIxs = GetIndices(actions, Atlas.Actions.BrandOfTheElements);
-                        if (brandIxs.Any(x => x - nameIx > 3 || x - nameIx < 1))
-                        {
-                            auditDict["AuditBrand"]++;
-                            return false;
-                        }
-                        break;
-                    default:
-                        auditDict["AuditBrand"]++;
-                        return false;
                 }
                 return true;
             }
@@ -483,33 +478,6 @@ namespace CraftingSolver
                 AuditInnerQuiet,
             };
 
-            public static bool AuditBrand(Simulator sim, List<Action> actions, List<Action> crafterActions)
-            {
-                bool brands = actions.Any(x => x.Equals(Atlas.Actions.BrandOfTheElements));
-                switch (actions.Count(x => x.Equals(Atlas.Actions.NameOfTheElements)))
-                {
-                    case 0:
-                        if (brands)
-                        {
-                            auditDict["AuditBrand"]++;
-                            return false;
-                        }
-                        break;
-                    case 1:
-                        int nameIx = actions.IndexOf(Atlas.Actions.NameOfTheElements);
-                        List<int> brandIxs = GetIndices(actions, Atlas.Actions.BrandOfTheElements);
-                        if (brandIxs.Any(x => x - nameIx > 3 || x - nameIx < 1))
-                        {
-                            auditDict["AuditBrand"]++;
-                            return false;
-                        }
-                        break;
-                    default:
-                        auditDict["AuditBrand"]++;
-                        return false;
-                }
-                return true;
-            }
             public static bool AuditQualityAfterByregots(Simulator sim, List<Action> actions, List<Action> crafterActions)
             {
                 int bbIx = actions.IndexOf(Atlas.Actions.ByregotsBlessing);
@@ -873,8 +841,7 @@ namespace CraftingSolver
                 AuditLastAction,
                 AuditInnerQuiet,
                 AuditRepeatBuffs,
-                AuditFirstRound,
-                AuditBrand
+                AuditFirstRound
             };
 
             public static bool AuditLastAction(List<Action> actions, List<Action> crafterActions)
@@ -900,24 +867,6 @@ namespace CraftingSolver
             public static bool AuditFirstRound(List<Action> actions, List<Action> crafterActions)
             {
                 return !Atlas.Actions.FirstRoundActions.Any(x => actions.LastIndexOf(x) > 0);
-            }
-            public static bool AuditBrand(List<Action> actions, List<Action> crafterActions)
-            {
-                bool brands = actions.Any(x => x == Atlas.Actions.BrandOfTheElements);
-                switch (actions.Count(x => x == Atlas.Actions.NameOfTheElements))
-                {
-                    case 0:
-                        if (brands) return false;
-                        break;
-                    case 1:
-                        int nameIx = actions.IndexOf(Atlas.Actions.NameOfTheElements);
-                        List<int> brandIxs = GetIndices(actions, Atlas.Actions.BrandOfTheElements);
-                        if (brandIxs.Any(x => x - nameIx > 3 || x - nameIx < 1)) return false;
-                        break;
-                    default:
-                        return false;
-                }
-                return true;
             }
             #endregion
 
@@ -1001,8 +950,8 @@ namespace CraftingSolver
             const int MAX_GENERATION = 50;
             const int ELITE_PERCENTAGE = 10;
             const int MATE_PERCENTAGE = 50;
-            const int INITIAL_POPULATION = 5000000; // 5 million
-            const int GENERATION_SIZE = 300000; // 300 thousand
+            const int INITIAL_POPULATION = 10000000; // 10 million
+            const int GENERATION_SIZE = 500000; // 500 thousand
             const int PROB_MUTATION = 15;
 
             Random rand = new Random();
@@ -1036,12 +985,11 @@ namespace CraftingSolver
             public delegate bool Audit(List<Action> actions, List<Action> crafterActions);
             public static Audit[] audits = new Audit[]
             {
-                //AuditLastAction,
                 AuditInnerQuiet,
                 AuditRepeatBuffs,
                 AuditFirstRound,
                 AuditFocused,
-                AuditBrand
+                AuditTrainedFinesse
             };
 
             public static bool AuditLastAction(List<Action> actions, List<Action> crafterActions)
@@ -1068,24 +1016,6 @@ namespace CraftingSolver
             {
                 return !Atlas.Actions.FirstRoundActions.Any(x => actions.LastIndexOf(x) > 0);
             }
-            public static bool AuditBrand(List<Action> actions, List<Action> crafterActions)
-            {
-                bool brands = actions.Any(x => x.Equals(Atlas.Actions.BrandOfTheElements));
-                switch (actions.Count(x => x.Equals(Atlas.Actions.NameOfTheElements)))
-                {
-                    case 0:
-                        if (brands) return false;
-                        break;
-                    case 1:
-                        int nameIx = actions.IndexOf(Atlas.Actions.NameOfTheElements);
-                        List<int> brandIxs = GetIndices(actions, Atlas.Actions.BrandOfTheElements);
-                        if (brandIxs.Any(x => x - nameIx > 3 || x - nameIx < 1)) return false;
-                        break;
-                    default:
-                        return false;
-                }
-                return true;
-            }
             public static bool AuditFocused(List<Action> actions, List<Action> crafterActions)
             {
                 for (int i = 0; i < actions.Count; i++)
@@ -1098,10 +1028,22 @@ namespace CraftingSolver
                 }
                 return true;
             }
-            #endregion
+            private static bool AuditTrainedFinesse(List<Action> actions, List<Action> crafterActions)
+            {
+                int iq = 0;
+                foreach(Action action in actions)
+                {
+                    if (action.QualityIncreaseMultiplier > 0) iq++;
+                    if (action.Equals(Atlas.Actions.PreparatoryTouch)) iq++;
+                    if (action.Equals(Atlas.Actions.Reflect)) iq++;
+                    if (action.Equals(Atlas.Actions.ByregotsBlessing)) iq = 0;
+
+                    if (action.Equals(Atlas.Actions.TrainedFinesse) && iq < 10) return false;
+                }
+                return true;
+            }
 
             public static bool SolutionAudit(List<Action> actions, List<Action> crafterActions) => audits.All(audit => audit(actions, crafterActions));
-
             public static List<int> GetIndices(List<Action> actions, Action action)
             {
                 List<int> res = new List<int>();
@@ -1111,6 +1053,7 @@ namespace CraftingSolver
                 }
                 return res;
             }
+            #endregion
 
             public Action MutateGene(Random r) => genes[r.Next(genes.Length - 1)];
             public List<Action> CreateChromosome(int length, Random r)
@@ -1124,19 +1067,19 @@ namespace CraftingSolver
                 }
                 return actions;
             }
-            public List<Action> Mate(List<Action> parent1, List<Action> parent2)
+            public List<Action> Mate(List<Action> parent1, List<Action> parent2, Random r)
             {
                 List<Action> actions = new List<Action>();
 
-                int length = rand.Next(2) == 0 ? parent1.Count : parent2.Count;
+                int length = r.Next(2) == 0 ? parent1.Count : parent2.Count;
                 for (int i = 0; i < length; i++)
                 {
                     Action action;
-                    int r = rand.Next(100);
+                    int p = r.Next(100);
 
-                    if (r <= probParentX) action = parent1.Count - 1 > i ? parent2[i] : parent1[i];
-                    else if (r <= probParentX * 2) action = parent2.Count - 1 > i ? parent1[i] : parent2[i];
-                    else action = MutateGene(rand);
+                    if (p <= probParentX) action = parent1.Count - 1 > i ? parent2[i] : parent1[i];
+                    else if (p <= probParentX * 2) action = parent2.Count - 1 > i ? parent1[i] : parent2[i];
+                    else action = MutateGene(r);
 
                     actions.Add(action);
                     if (action.Equals(Atlas.Actions.DummyAction)) break;
@@ -1163,6 +1106,12 @@ namespace CraftingSolver
                     }).AsTask();
                 }
                 Task.WaitAll(actions);
+            }
+
+            public List<Action> GetSucessfulSteps(Simulator sim, List<Action> actions, State startState)
+            {
+                State finishState = sim.Simulate(actions, startState, false, false, false);
+                return actions.Take(finishState.LastStep).ToList();
             }
 
             public List<Action> Run(Simulator sim, int maxTasks)
@@ -1217,13 +1166,13 @@ namespace CraftingSolver
                     Task.WaitAll(actions);
 
                     if (foundPerfect)
-                        return perfect;
+                        return GetSucessfulSteps(sim, perfect, startState);
 
                     population = new ConcurrentBag<List<Action>>();
                     List<KeyValuePair<double, List<Action>>> scores = scoredPopulation.ToList();
                     scores.Sort(comparer);
                     if (generation == MAX_GENERATION)
-                        return scores.First().Value;
+                        return GetSucessfulSteps(sim, scores.First().Value, startState);
                     scores.RemoveAll(x => x.Key == -1);
 
                     if (scores.Any())
@@ -1239,12 +1188,13 @@ namespace CraftingSolver
                         // mate next percent of population
                         int mateCount = (int)Math.Ceiling(populationSize * ((double)MATE_PERCENTAGE / 100));
                         List<List<Action>> matingPool = scores.Take(mateCount).Select(x => x.Value).ToList();
-                        for (int i = eliteCount; i < GENERATION_SIZE; i++)
+                        while (true)
                         {
                             List<Action> parent1 = matingPool[rand.Next(mateCount - 1)];
                             List<Action> parent2 = matingPool[rand.Next(mateCount - 1)];
-                            var chromosome = Mate(parent1, parent2);
+                            var chromosome = Mate(parent1, parent2, rand);
                             if (!SolutionAudit(chromosome, genesList)) continue;
+                            if (population.Count >= GENERATION_SIZE) break;
                             population.Add(chromosome);
                         }
                     }

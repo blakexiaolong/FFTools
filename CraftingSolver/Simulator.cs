@@ -13,6 +13,21 @@ namespace CraftingSolver
         public double ReliabilityIndex { get; set; }
         public int MaxLength { get; set; }
 
+        public int EffectiveCrafterLevel { get; set; }
+        public int LevelDifference { get; set; }
+        public int PureLevelDifference { get; set; }
+        public double BaseProgressIncrease { get; set; }
+        public double BaseQualityIncrease { get; set; }
+
+        public void Initialize()
+        {
+            EffectiveCrafterLevel = GetEffectiveCrafterLevel();
+            LevelDifference = Math.Min(49, Math.Max(-30, EffectiveCrafterLevel - Recipe.Level));
+            PureLevelDifference = Crafter.Level - Recipe.Level;
+            BaseProgressIncrease = CalculateBaseProgressIncrease();
+            BaseQualityIncrease = CalculateBaseQualityIncrease();
+        }
+
         public State Simulate(List<Action> actions, State startState, bool assumeSuccess, bool verbose, bool debug)
         {
             State s = startState.Clone();
@@ -164,45 +179,27 @@ namespace CraftingSolver
         }
         public SimulatorStep ApplyModifiers(State state, Action action)
         {
-            int control = Crafter.Control;
             int cpCost = action.CPCost;
-            int effectiveCrafterLevel = GetEffectiveCrafterLevel();
-            int levelDifference = effectiveCrafterLevel - Recipe.Level;
-            int originalLevelDifference = effectiveCrafterLevel - Recipe.Level;
-            int pureLevelDifference = Crafter.Level - Recipe.Level;
-
-            Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
-            if (iq != default) control += Convert.ToInt32(0.2 * iq.Turns * Crafter.Control);
-
             double progressIncreaseMultiplier = CalcProgressMultiplier(state, action);
-            if (action.Equals(Atlas.Actions.MuscleMemory) && state.Step != 1)
-            {
-                state.WastedActions++;
-                state.WastedCounter["NonFirstTurn"]++;
-                progressIncreaseMultiplier = 0;
-                cpCost = 0;
-            }
-            double bProgressGain = CalculateBaseProgressIncrease(levelDifference, Crafter.Craftsmanship) * action.ProgressIncreaseMultiplier * progressIncreaseMultiplier;
+            double qualityIncreaseMultiplier = CalcQualityMultiplier(state, action);
+            double bProgressGain = BaseProgressIncrease * action.ProgressIncreaseMultiplier * progressIncreaseMultiplier;
+            double bQualityGain = BaseQualityIncrease * action.QualityIncreaseMultiplier * qualityIncreaseMultiplier;
+
             if (action.Equals(Atlas.Actions.FlawlessSynthesis))
             {
                 bProgressGain = 40;
             }
-            double qualityIncreaseMultiplier = CalcQualityMultiplier(state, action);
-            double bQualityGain = CalculateBaseQualityIncrease(levelDifference, control) * action.QualityIncreaseMultiplier * qualityIncreaseMultiplier;
 
-            // effects modifying quality gain directly
-            if (action.Equals(Atlas.Actions.TrainedEye))
+            // combo actions
+            if (state.Action != default)
             {
-                if (state.Step == 1 && pureLevelDifference >= 10)
+                if (action.Equals(Atlas.Actions.StandardTouch) && state.Action.Equals(Atlas.Actions.BasicTouch))
                 {
-                    bQualityGain = Recipe.MaxQuality;
+                    cpCost = 18;
                 }
-                else
+                else if (action.Equals(Atlas.Actions.AdvancedTouch) && state.Action.Equals(Atlas.Actions.StandardTouch))
                 {
-                    state.WastedActions++;
-                    state.WastedCounter["NonFirstTurn"]++;
-                    bQualityGain = 0;
-                    cpCost = 0;
+                    cpCost = 18;
                 }
             }
 
@@ -222,12 +219,33 @@ namespace CraftingSolver
                 }
             }
 
+            // first round actions
+            if (action.Equals(Atlas.Actions.TrainedEye))
+            {
+                if (state.Step == 1 && PureLevelDifference >= 10 && !Recipe.IsExpert)
+                {
+                    bQualityGain = Recipe.MaxQuality;
+                }
+                else
+                {
+                    state.WastedActions++;
+                    state.WastedCounter["NonFirstTurn"]++;
+                    bQualityGain = 0;
+                    cpCost = 0;
+                }
+            }
             if (action.Equals(Atlas.Actions.Reflect) && state.Step != 1)
             {
                 state.WastedActions++;
                 state.WastedCounter["NonFirstTurn"]++;
-                control = 0;
                 bQualityGain = 0;
+                cpCost = 0;
+            }
+            if (action.Equals(Atlas.Actions.MuscleMemory) && state.Step != 1)
+            {
+                state.WastedActions++;
+                state.WastedCounter["NonFirstTurn"]++;
+                progressIncreaseMultiplier = 0;
                 cpCost = 0;
             }
 
@@ -235,7 +253,7 @@ namespace CraftingSolver
             double durabilityCost = action.DurabilityCost;
             if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.WasteNot) || x.Action.Equals(Atlas.Actions.WasteNot2)))
             {
-                if (action.Equals(Atlas.Actions.PrudentTouch))
+                if (action.Equals(Atlas.Actions.PrudentTouch) || action.Equals(Atlas.Actions.PrudentSynthesis))
                 {
                     bQualityGain = 0;
                     state.WastedActions++;
@@ -247,13 +265,25 @@ namespace CraftingSolver
                 }
             }
 
+            if (action.Equals(Atlas.Actions.TrainedFinesse))
+            {
+                Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+                if (iq == default || iq.Turns != 10)
+                {
+                    state.WastedActions++;
+                    state.WastedCounter["UntrainedFinesse"]++;
+                    bQualityGain = 0;
+                    cpCost = 0;
+                }
+            }
+
             return new SimulatorStep
             {
                 Craftsmanship = Crafter.Craftsmanship,
-                Control = control,
-                EffectiveCrafterLevel = effectiveCrafterLevel,
+                Control = Crafter.Control,
+                EffectiveCrafterLevel = EffectiveCrafterLevel,
                 EffectiveRecipeLevel = Recipe.Level,
-                LevelDifference = levelDifference,
+                LevelDifference = LevelDifference,
                 SuccessProbability = CalcSuccessProbability(state, action),
                 QualityIncreaseMultiplier = qualityIncreaseMultiplier,
                 BProgressGain = bProgressGain,
@@ -289,10 +319,6 @@ namespace CraftingSolver
                 progressIncreaseMultiplier++;
                 state.CountDowns.Remove(muMe);
             }
-            if (action.Equals(Atlas.Actions.BrandOfTheElements) && state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.NameOfTheElements)))
-            {
-                progressIncreaseMultiplier += state.CalcNameOfElementsBonus();
-            }
             if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Veneration)))
             {
                 progressIncreaseMultiplier += 0.5;
@@ -314,12 +340,13 @@ namespace CraftingSolver
             {
                 qualityIncreaseMultiplier += 0.5;
             }
+
+            Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
             if (action.Equals(Atlas.Actions.ByregotsBlessing))
-            {
-                Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
-                if (iq != default && iq.Turns >= 1)
+            {               
+                if (iq != default && iq.Turns > 0)
                 {
-                    qualityIncreaseMultiplier *= 1 + (0.2 * iq.Turns);
+                    qualityIncreaseMultiplier += Math.Min(3, 1 + iq.Turns * 0.2);
                 }
                 else
                 {
@@ -328,18 +355,22 @@ namespace CraftingSolver
                     state.WastedCounter["BBWithoutIQ"]++;
                 }
             }
+            else
+            {
+                qualityIncreaseMultiplier += 0.1 * iq?.Turns ?? 0;
+            }
             return qualityIncreaseMultiplier;
         }
 
-        public double CalculateBaseProgressIncrease(int levelDifference, int craftsmanship)
+        public double CalculateBaseProgressIncrease()
         {
-            double levelDifferenceFactor = GetLevelDifferenceFactor("craftsmanship", levelDifference);
-            return Math.Floor((levelDifferenceFactor * (0.21 * craftsmanship + 2) * (10000 + craftsmanship)) / (10000 + Recipe.SuggestedCraftsmanship));
+            double b = (Crafter.Craftsmanship * 10 / Recipe.ProgressDivider + 2);
+            return LevelDifference <= 0 ? b * Recipe.ProgressModifier : b;
         }
-        public double CalculateBaseQualityIncrease(int levelDifference, int control)
+        public double CalculateBaseQualityIncrease()
         {
-            double levelDifferenceFactor = GetLevelDifferenceFactor("control", levelDifference);
-            return Math.Floor((levelDifferenceFactor * (0.35 * control + 35) * (10000 + control)) / (10000 + Recipe.SuggestedControl));
+            double b = (Crafter.Control * 10 / Recipe.QualityDivider + 35);
+            return LevelDifference <= 0 ? b * Recipe.QualityModifier : b;
         }
 
         public double ProbabilityGoodForSynth()
@@ -402,15 +433,6 @@ namespace CraftingSolver
         }
         public double GetLevelDifferenceFactor(string kind, int levelDifference)
         {
-            if (levelDifference < -30)
-            {
-                levelDifference = -30;
-            }
-            else if (levelDifference > 20)
-            {
-                levelDifference = 20;
-            }
-
             Dictionary<int, double> factors = Atlas.LevelDifferenceFactors[kind];
             if (factors == default)
             {
