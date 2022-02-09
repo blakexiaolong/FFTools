@@ -29,7 +29,7 @@ namespace CraftingSolver
         public int QualityGain { get; set; }
         public int BProgressGain { get; set; }
         public int BQualityGain { get; set; }
-        public bool Success => Progress >= Simulator.Recipe.Difficulty;
+        public bool Success => Progress >= Simulator.Recipe.Difficulty && CP >= 0;
 
         public Dictionary<string, int> WastedCounter = new Dictionary<string, int>
         {
@@ -162,6 +162,15 @@ namespace CraftingSolver
             CountDowns.RemoveAll(x => x.Turns == 0);
 
             Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+            if(iq==default && !action.Equals(Atlas.Actions.ByregotsBlessing) && Atlas.Actions.QualityActions.Contains(action))
+            {
+                CountUps.Add(new Effect
+                {
+                    Action = Atlas.Actions.InnerQuiet,
+                    Turns = 0
+                });
+                iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+            }
             if (iq != default)
             {
                 // conditional IQ countups
@@ -221,6 +230,11 @@ namespace CraftingSolver
             Durability -= durabilityCost;
             CP -= cpCost;
             LastStep += 1;
+
+            if (CP < 0)
+            {
+                WastedCounter["OutOfCP"]++;
+            }
 
             ApplySpecialActionEffects(action);
             UpdateEffectCounters(action, successProbability);

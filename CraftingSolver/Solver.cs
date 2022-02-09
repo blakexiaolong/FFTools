@@ -44,7 +44,11 @@ namespace CraftingSolver
             MaxQuality = 8500,
             SuggestedCraftsmanship = 2480,
             SuggestedControl = 2195,
-            Stars = 3
+            Stars = 3,
+            ProgressDivider = 110,
+            QualityDivider = 90,
+            ProgressModifier = 0.8,
+            QualityModifier = 0.7
         };
         static Recipe newExarchic = new Recipe
         {
@@ -58,6 +62,21 @@ namespace CraftingSolver
             Stars = 4,
             ProgressDivider = 110,
             QualityDivider = 90,
+            ProgressModifier = 0.8,
+            QualityModifier = 0.7
+        };
+        static Recipe classicalMilpreves = new Recipe
+        {
+            Level = 580,
+            Difficulty = 3900,
+            StartQuality = 0,
+            MaxQuality = 10920,
+            Durability = 70,
+            SuggestedCraftsmanship = 3180,
+            SuggestedControl = 3080,
+            Stars = 2,
+            ProgressDivider = 130,
+            QualityDivider = 115,
             ProgressModifier = 0.8,
             QualityModifier = 0.7
         };
@@ -82,15 +101,35 @@ namespace CraftingSolver
             Specialist = false,
             Actions = Atlas.Actions.DependableActions
         };
+        static Crafter newUnbuffed = new Crafter
+        {
+            Class = "Armorer",
+            Craftsmanship = 3286,
+            Control = 3396,
+            CP = 565,
+            Level = 90,
+            Specialist = false,
+            Actions = Atlas.Actions.DependableActions
+        };
+        static Crafter newBuffed = new Crafter
+        {
+            Class = "Armorer",
+            Craftsmanship = 3324,
+            Control = 3462,
+            CP = 675,
+            Level = 90,
+            Specialist = false,
+            Actions = Atlas.Actions.DependableActions
+        };
 
         private readonly Simulator sim = new Simulator
         {
-            Crafter = chiliCrabCunning,
-            Recipe = newExarchic,
+            Crafter = newBuffed,
+            Recipe = classicalMilpreves,
             MaxTrickUses = 0,
             UseConditions = false,
             ReliabilityIndex = 1,
-            MaxLength = 22,
+            MaxLength = 30,
         };
 
         public void Solve()
@@ -99,7 +138,31 @@ namespace CraftingSolver
             try
             {
                 sim.Initialize();
-                solution = new GeneticSolver().Run(sim, maxTasks);
+                Atlas.Actions.UpgradeActionsByLevel(sim.Crafter.Level);
+                State finishState = sim.Simulate(new List<Action>
+                {
+                    Atlas.Actions.MuscleMemory,
+                    Atlas.Actions.Manipulation,
+                    Atlas.Actions.Veneration,
+                    Atlas.Actions.WasteNot2,
+                    Atlas.Actions.Groundwork,
+                    Atlas.Actions.Groundwork,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.Innovation,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.AdvancedTouch,
+                    Atlas.Actions.GreatStrides,
+                    Atlas.Actions.Innovation,
+                    Atlas.Actions.PreparatoryTouch,
+                    Atlas.Actions.TrainedFinesse,
+                    Atlas.Actions.GreatStrides,
+                    Atlas.Actions.ByregotsBlessing,
+                    Atlas.Actions.CarefulSynthesis
+                }, sim.Simulate(null, new State(), true, false, false), false, true, true);
+                var score = ScoreState(sim, finishState);
+                solution = new BruteForceSolver4().Run(sim, maxTasks);
             }
             catch (Exception e)
             {
@@ -116,32 +179,54 @@ namespace CraftingSolver
             List<Action> Run(Simulator sim, int maxTasks);
         }
 
+        public static List<Action> GetFirstRoundActions(Simulator sim)
+        {
+            List<Action> firstRoundActions = sim.Crafter.Actions.ToList();
+            if (sim.Crafter.Level - sim.Recipe.Level < 10) firstRoundActions.Remove(Atlas.Actions.TrainedEye);
+            return firstRoundActions;
+        }
+        public static List<Action> GetOtherActions(List<Action> firstRoundActions)
+        {
+            Action[] temp = new Action[firstRoundActions.Count];
+            firstRoundActions.CopyTo(temp);
+            List<Action> otherActions = temp.ToList();
+            otherActions.Remove(Atlas.Actions.MuscleMemory);
+            otherActions.Remove(Atlas.Actions.TrainedEye);
+            otherActions.Remove(Atlas.Actions.Reflect);
+            return otherActions;
+        }
+
         public static Tuple<double, bool> ScoreState(Simulator sim, State state)
         {
-            var violations = state.CheckViolations();
-            if (state.Reliability != 1 || state.WastedActions > 0 || !violations.DurabilityOk || !violations.CpOk || !violations.TrickOk)
+            if (!state.Success)
             {
-                foreach (var kvp in state.WastedCounter)
+                var violations = state.CheckViolations();
+                if (state.Reliability != 1 || state.WastedActions > 0 || !violations.DurabilityOk || !violations.CpOk || !violations.TrickOk)
                 {
-                    if (!wastedDict.ContainsKey(kvp.Key))
+                    foreach (var kvp in state.WastedCounter)
                     {
-                        wastedDict.Add(kvp.Key, kvp.Value);
+                        if (!wastedDict.ContainsKey(kvp.Key))
+                        {
+                            wastedDict.Add(kvp.Key, kvp.Value);
+                        }
+                        else
+                        {
+                            wastedDict[kvp.Key] += kvp.Value;
+                        }
                     }
-                    else
-                    {
-                        wastedDict[kvp.Key] += kvp.Value;
-                    }
+                    return new Tuple<double, bool>(-1, false);
                 }
-                return new Tuple<double, bool>(-1, false);
             }
             bool perfectSolution = state.Quality >= sim.Recipe.MaxQuality && state.Progress >= sim.Recipe.Difficulty;
             double maxQuality = sim.Recipe.MaxQuality * 1.1;
             double progress = (state.Progress > sim.Recipe.Difficulty ? sim.Recipe.Difficulty : state.Progress) / sim.Recipe.Difficulty;
             double quality = (state.Quality > maxQuality ? maxQuality : state.Quality) / sim.Recipe.MaxQuality;
-            return new Tuple<double, bool>((progress + quality) * 100, perfectSolution);
+            double cp = state.CP / sim.Crafter.CP;
+            double dur = state.Durability / sim.Recipe.Durability;
+            return new Tuple<double, bool>((progress + quality) * 100 + (cp + dur) * 10, perfectSolution);
         }
 
-        static ulong attempts = 0, chainAuditFail = 0, auditFail = 0, simFail = 0;
+        static ulong attempts = 0, chainAuditFail = 0, auditFail = 0, simFail = 0, lookaheadSkip = 0, repeated = 0;
         static Dictionary<string, int> wastedDict = new Dictionary<string, int>();
         static Dictionary<string, int> auditDict = new Dictionary<string, int>
         {
@@ -832,6 +917,311 @@ namespace CraftingSolver
                 }
             }
         }
+        public class BruteForceSolver4
+        {
+            const int LOOKAHEAD_AMOUNT = 6;
+            const int MAX_PROGRESS_SIZE = 20;
+            const int MAX_LOOKAHEAD_SIZE = 300;
+            bool FOUND_PERFECT = false;
+            Random random = new Random();
+            #region Audits
+            public delegate bool Audit(Simulator sim, List<Action> actions, List<Action> crafterActions);
+            public static Audit[] audits = new Audit[]
+            {
+                AuditCP,
+                AuditUnfocused,
+                AuditDurability,
+                AuditRepeatBuffs
+            };
+
+            public static bool AuditUnfocused(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions[actions.Count - 1].Equals(Atlas.Actions.FocusedSynthesis) || actions[actions.Count - 1].Equals(Atlas.Actions.FocusedTouch))
+                {
+                    if (actions.Count < 2)
+                    {
+                        auditDict["AuditUnfocused"]++;
+                        return false;
+                    }
+                    if (actions[actions.Count - 2].Equals(Atlas.Actions.Observe))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        auditDict["AuditUnfocused"]++;
+                        return false;
+                    }
+                }
+                return true;
+            }
+            public static bool AuditRepeatBuffs(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                List<Action> wastedBuffs = new List<Action>();
+                foreach (Action action in actions)
+                {
+                    if (Atlas.Actions.Buffs.Contains(action))
+                    {
+                        if (wastedBuffs.Contains(action))
+                        {
+                            auditDict["AuditRepeatBuffs"]++;
+                            return false;
+                        }
+                        wastedBuffs.Add(action);
+                    }
+                    else if (wastedBuffs.Any())
+                    {
+                        if (Atlas.Actions.ProgressActions.Contains(action))
+                        {
+                            wastedBuffs.RemoveAll(buff => Atlas.Actions.ProgressBuffs.Contains(buff));
+                            wastedBuffs.RemoveAll(buff => !Atlas.Actions.QualityBuffs.Contains(buff));
+                        }
+                        else if (Atlas.Actions.QualityActions.Contains(action))
+                        {
+                            wastedBuffs.RemoveAll(buff => Atlas.Actions.QualityBuffs.Contains(buff));
+                            wastedBuffs.RemoveAll(buff => !Atlas.Actions.ProgressBuffs.Contains(buff));
+                        }
+                    }
+                }
+
+                return true;
+            }
+            public static bool AuditCP(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                if (actions.Sum(x => x.CPCost) > sim.Crafter.CP)
+                {
+                    auditDict["AuditCP"]++;
+                    return false;
+                }
+                return true;
+            }
+            public static bool AuditDurability(Simulator sim, List<Action> actions, List<Action> crafterActions)
+            {
+                int dur = sim.Recipe.Durability;
+                int manipTurns = 0;
+                int wasteNotTurns = 0;
+                foreach (Action action in actions)
+                {
+                    if (dur <= 0)
+                    {
+                        auditDict["AuditDurability"]++;
+                        return false;
+                    }
+
+                    if (action.Equals(Atlas.Actions.Groundwork) && dur < action.DurabilityCost) dur -= 10;
+                    else if (action.DurabilityCost > 0) dur -= wasteNotTurns > 0 ? action.DurabilityCost / 2 : action.DurabilityCost;
+                    else if (action.Equals(Atlas.Actions.MastersMend)) dur = Math.Min(sim.Recipe.Durability, dur + 30);
+
+                    if (action.Equals(Atlas.Actions.Manipulation)) manipTurns = 8;
+                    else if (action.Equals(Atlas.Actions.WasteNot)) wasteNotTurns = 4;
+                    else if (action.Equals(Atlas.Actions.WasteNot2)) wasteNotTurns = 8;
+                    else if (manipTurns > 0 && dur > 0)
+                    {
+                        dur = Math.Min(sim.Recipe.Durability, dur + 5);
+                    }
+                    manipTurns = Math.Max(manipTurns - 1, 0);
+                    wasteNotTurns = Math.Max(wasteNotTurns - 1, 0);
+                }
+                return true;
+            }
+
+            public static List<int> GetIndices(List<Action> actions, Action action)
+            {
+                List<int> res = new List<int>();
+                for (int i = 0; i < actions.Count; i++)
+                {
+                    if (actions[i].Equals(action)) res.Add(i);
+                }
+                return res;
+            }
+            #endregion
+
+            public static bool SolutionAudit(Simulator sim, List<Action> actions, List<Action> crafterActions) => audits.All(audit => audit(sim, actions, crafterActions));
+
+            public List<Action> Run(Simulator sim, int maxTasks)
+            {
+                double bestScore = 0;
+                State startState = sim.Simulate(null, new State(), true, false, false);
+
+                double worstScore = 0;
+                object lockObj = new object();
+                Tuple<double, List<Action>> solution = new Tuple<double, List<Action>>(0, new List<Action>());
+                List<Tuple<double, List<Action>>> progress = new List<Tuple<double, List<Action>>>();
+
+                List<Action> firstRoundActions = GetFirstRoundActions(sim);
+                firstRoundActions.Remove(Atlas.Actions.DummyAction);
+                List<Action> otherActions = GetOtherActions(firstRoundActions);
+
+                Stopwatch sw = new Stopwatch();
+                List<Tuple<int, long>> times = new List<Tuple<int, long>>();
+                sw.Start();
+
+                foreach (Action action in firstRoundActions)
+                {
+                    List<Action> actions = new List<Action> { action };
+                    State finishState = sim.Simulate(actions, startState, false, false, false);
+                    attempts++;
+                    Tuple<double, bool> score = ScoreState(sim, finishState);
+                    if (score.Item1 > 0)
+                    {
+                        if (finishState.CheckViolations().ProgressOk)
+                        {
+                            if (score.Item1 > bestScore)
+                            {
+                                bestScore = score.Item1;
+                                solution = new Tuple<double, List<Action>>(score.Item1, actions);
+                                if (score.Item2) goto foundPerfect;
+                            }
+                        }
+                        else
+                        {
+                            progress.Add(new Tuple<double, List<Action>>(score.Item1, actions));
+                        }
+                    }
+                    else { simFail++; }
+                }
+
+                for (int i = 1; i < sim.MaxLength; i++)
+                {
+                    List<Tuple<double, List<Action>>> nextProgress = new List<Tuple<double, List<Action>>>();
+                    foreach (Tuple<double, List<Action>> possibleSolution in progress)
+                    {
+                        List<Task> tasks = new List<Task>();
+                        foreach (Action action in otherActions)
+                        {
+                            if (FOUND_PERFECT) goto foundPerfect;
+                            tasks.Add(Task.Factory.StartNew(() =>
+                            {
+                                List<Action> steps = possibleSolution.Item2.ToList();
+                                steps.Add(action);
+
+                                State finishState = sim.Simulate(steps, startState, true, false, false);
+                                Tuple<double, bool> score = ScoreState(sim, finishState);
+                                attempts++;
+
+                                if (score.Item1 <= 0)
+                                {
+                                    lock (lockObj) simFail++;
+                                    return;
+                                }
+
+                                if (finishState.CheckViolations().ProgressOk)
+                                {
+                                    lock (lockObj)
+                                    {
+                                        if (score.Item1 > bestScore)
+                                        {
+                                            bestScore = score.Item1;
+                                            solution = new Tuple<double, List<Action>>(score.Item1, steps);
+                                            if (score.Item2)
+                                            {
+                                                FOUND_PERFECT = true;
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    List<Tuple<double, List<Action>>> lookaheadSolutions = LookAhead(sim, startState, steps, otherActions, LOOKAHEAD_AMOUNT);
+                                    Tuple<double, List<Action>> bestLookahead = new Tuple<double, List<Action>>(0, new List<Action>());
+                                    foreach (var lookaheadSolution in lookaheadSolutions) if (lookaheadSolution.Item1 > bestLookahead.Item1) bestLookahead = lookaheadSolution;
+
+                                    lock (lockObj)
+                                    {
+                                        if (FOUND_PERFECT)
+                                        {
+                                            solution = bestLookahead;
+                                            return;
+                                        }
+                                        else if (nextProgress.Count() < MAX_PROGRESS_SIZE)
+                                        {
+                                            nextProgress.Add(new Tuple<double, List<Action>>(bestLookahead.Item1, bestLookahead.Item2.Take(i + 1).ToList()));
+                                            worstScore = nextProgress.Min(x => x.Item1);
+                                        }
+                                        else if (bestLookahead.Item1 > worstScore)
+                                        {
+                                            nextProgress.RemoveAll(x => x.Item1 == worstScore);
+                                            nextProgress.Add(new Tuple<double, List<Action>>(bestLookahead.Item1, bestLookahead.Item2.Take(i + 1).ToList()));
+                                            worstScore = nextProgress.Min(x => x.Item1);
+                                        }
+                                    }
+                                }
+                            }));
+                            Task.WaitAll(tasks.ToArray());
+                        }
+                    }
+                    progress = nextProgress;
+                }
+
+            foundPerfect:
+                sw.Stop();
+                State final = sim.Simulate(solution.Item2, startState, false, true, true);
+                return solution.Item2.Take(final.LastStep).ToList();
+            }
+
+            public List<Tuple<double, List<Action>>> LookAhead(Simulator sim, State startState, List<Action> progress, List<Action> actions, int amount, SortedList<double, List<Action>>[] paths = null)
+            {
+                // initialize arrays
+                if (paths == null)
+                {
+                    paths = new SortedList<double, List<Action>>[amount];
+                    for (int i = 0; i < amount; i++)
+                    {
+                        paths[i] = new SortedList<double, List<Action>>();
+                    }
+                }
+                int index = paths.Length - amount;
+
+                List<Tuple<double, List<Action>>> retChoices = new List<Tuple<double, List<Action>>>();
+                foreach (Action action in actions)
+                {
+                    if (FOUND_PERFECT) continue;
+                    List<Action> steps = progress.ToList();
+                    steps.Add(action);
+
+                    State finishState = sim.Simulate(steps, startState, true, false, false);
+                    Tuple<double, bool> score = ScoreState(sim, finishState);
+                    attempts++;
+
+                    if (score.Item1 <= 0)
+                    {
+                        simFail++;
+                        continue;
+                    }
+                    else if (paths[index].Count == MAX_LOOKAHEAD_SIZE && score.Item1 < paths[index].First().Key)
+                    {
+                        lookaheadSkip++;
+                        continue;
+                    }
+
+                    double agg = 0;
+                    while (paths[index].ContainsKey(score.Item1 + agg))
+                    {
+                        agg += random.NextDouble() / 10000;
+                        repeated++;
+                    }
+                    paths[index].Add(score.Item1 + agg, steps);
+
+                    if (paths[index].Count > MAX_LOOKAHEAD_SIZE) paths[index].RemoveAt(0);
+
+                    if (finishState.CheckViolations().ProgressOk || amount == 1)
+                    {
+                        retChoices.Add(new Tuple<double, List<Action>>(score.Item1, steps));
+                        if (score.Item2) FOUND_PERFECT = true;
+                    }
+                    else if (amount == 1)
+                    {
+                        retChoices.Add(new Tuple<double, List<Action>>(score.Item1, steps));
+                    }
+                    else
+                    {
+                        retChoices.AddRange(LookAhead(sim, startState, steps, actions, amount - 1, paths));
+                    }
+                }
+                return retChoices;
+            }
+        }
         public class BackFirstSolver
         {
             #region Audits
@@ -950,7 +1340,7 @@ namespace CraftingSolver
             const int MAX_GENERATION = 50;
             const int ELITE_PERCENTAGE = 10;
             const int MATE_PERCENTAGE = 50;
-            const int INITIAL_POPULATION = 10000000; // 10 million
+            const int INITIAL_POPULATION = 5000000; // 5 million
             const int GENERATION_SIZE = 500000; // 500 thousand
             const int PROB_MUTATION = 15;
 
@@ -1178,9 +1568,10 @@ namespace CraftingSolver
                     if (scores.Any())
                     {
                         var best = scores.First();
+                        int generationSize = generation <= 2 ? INITIAL_POPULATION : GENERATION_SIZE;
 
                         // take top percent of population
-                        int populationSize = Math.Min(GENERATION_SIZE, scores.Count);
+                        int populationSize = Math.Min(generationSize, scores.Count);
                         int eliteCount = (int)Math.Ceiling(populationSize * ((double)ELITE_PERCENTAGE / 100));
                         IEnumerable<List<Action>> elites = scores.Take(eliteCount).Select(x => x.Value);
                         foreach (List<Action> elite in elites) population.Add(elite);
@@ -1194,10 +1585,11 @@ namespace CraftingSolver
                             List<Action> parent2 = matingPool[rand.Next(mateCount - 1)];
                             var chromosome = Mate(parent1, parent2, rand);
                             if (!SolutionAudit(chromosome, genesList)) continue;
-                            if (population.Count >= GENERATION_SIZE) break;
+                            if (population.Count >= generationSize) break;
                             population.Add(chromosome);
                         }
                     }
+                    
                     generation++;
                 }
             }

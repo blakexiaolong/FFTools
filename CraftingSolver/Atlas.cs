@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace CraftingSolver
 {
@@ -688,13 +689,8 @@ namespace CraftingSolver
                 TrainedEye,
                 Reflect
             };
-            public static Action[] ProgressActions = new Action[]
-            {
-                BasicSynth,
-                CarefulSynthesis,
-                FocusedSynthesis,
-                DelicateSynthesis
-            };
+            public static Action[] ProgressActions = AllActions.Where(x => x.ProgressIncreaseMultiplier > 0).ToArray();
+            public static Action[] QualityActions = AllActions.Where(x => x.QualityIncreaseMultiplier > 0).ToArray();
             public static Action[] Buffs = new Action[]
             {
                 Observe,
@@ -705,19 +701,14 @@ namespace CraftingSolver
                 Innovation,
                 GreatStrides
             };
-            public static Action[] QualityActions = new Action[]
+            public static Action[] ProgressBuffs = new Action[]
             {
-                BasicTouch,
-                StandardTouch,
-                HastyTouch,
-                ByregotsBlessing,
-                PreciseTouch,
-                PrudentTouch,
-                FocusedTouch,
-                PreparatoryTouch,
-                DelicateSynthesis,
-                TrainedFinesse,
-                AdvancedTouch
+                Veneration
+            };
+            public static Action[] QualityBuffs = new Action[]
+            {
+                Innovation,
+                GreatStrides
             };
 
             public static void UpgradeActionsByLevel(int level)

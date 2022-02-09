@@ -31,7 +31,6 @@ namespace CraftingSolver
         public State Simulate(List<Action> actions, State startState, bool assumeSuccess, bool verbose, bool debug)
         {
             State s = startState.Clone();
-            List<string> log = new List<string>();
 
             double pGood = ProbabilityGoodForSynth();
             double pExcellent = ProbabilityExcellentForSynth();
@@ -41,17 +40,6 @@ namespace CraftingSolver
             if (actions == default || actions.Count == 0)
             {
                 return NewStateFromSynth(!UseConditions, ppExcellent, ppGood);
-            }
-
-            if (debug)
-            {
-                log.Add($"{"#":-2} {"Action":30} {"DUR":-5} {"CP":-5} {"EQUA":-5} {"EPRG":-8} {"IQ":-8} {"CTL":-5} {"QINC":-8} {"BPRG":-5} {"BQUA":-5} {"WAC":-5}");
-                log.Add($"{s.Step:2} {"":30} {s.Durability:5} {s.CP:5} {s.Quality:5} {s.Progress:8} {0:8} {Crafter.Control:5} {0:8} {0:5} {0:5} {0:5}");
-            }
-            else if (verbose)
-            {
-                log.Add($"{"#":-2} {"Action":30} {"DUR":-5} {"CP":-5} {"EQUA":-8} {"EPROG":-8} {"IQ":-5}");
-                log.Add($"{s.Step:2} {"":30} {s.Durability:-5} {s.CP:-5} {s.Quality:-8} {s.Progress:-8} {0:5}");
             }
 
             foreach (Action action in actions)
@@ -117,31 +105,7 @@ namespace CraftingSolver
                     }
                 }
 
-                if (debug || verbose)
-                {
-                    double iq = 0;
-                    if (s.CountUps.Any(x => x.Action == Atlas.Actions.InnerQuiet))
-                    {
-                        iq = s.CountUps.First(x => x.Action == Atlas.Actions.InnerQuiet).Turns;
-                    }
-
-                    if (debug)
-                    {
-                        log.Add($"{s.Step:2} {action.Name:30} {s.Durability:5} {s.CP:5} {s.Quality:5} {s.Progress:8} {iq:8} {r.Control:5} {qualityGain:8} {Math.Floor(r.BProgressGain):5} {Math.Floor(r.BQualityGain):5} {s.WastedActions:5}");
-                    }
-                    else
-                    {
-                        log.Add($"{s.Step:2} {action.Name:30} {s.Durability:-5} {s.CP:-5} {s.Quality:-8} {s.Progress:-8} {iq:5}");
-                    }
-                }
-
                 s.Action = action;
-            }
-
-            if (debug || verbose)
-            {
-                StateViolations check = s.CheckViolations();
-                log.Add($"Progress Check: {check.ProgressOk}, Durability Check: {check.DurabilityOk}, CP Check: {check.CpOk}, Tricks Check: {check.TrickOk}, Reliability Check: {check.ReliabilityOk}, Wasted Actions: {s.WastedActions}");
             }
 
             s.Action = actions[actions.Count - 1];
@@ -346,7 +310,7 @@ namespace CraftingSolver
             {               
                 if (iq != default && iq.Turns > 0)
                 {
-                    qualityIncreaseMultiplier += Math.Min(3, 1 + iq.Turns * 0.2);
+                    qualityIncreaseMultiplier *= Math.Min(3, 1 + iq.Turns * 0.2);
                 }
                 else
                 {
@@ -355,10 +319,7 @@ namespace CraftingSolver
                     state.WastedCounter["BBWithoutIQ"]++;
                 }
             }
-            else
-            {
-                qualityIncreaseMultiplier += 0.1 * iq?.Turns ?? 0;
-            }
+            qualityIncreaseMultiplier *= 1 + (0.1 * iq?.Turns ?? 0);
             return qualityIncreaseMultiplier;
         }
 
