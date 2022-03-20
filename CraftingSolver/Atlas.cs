@@ -664,10 +664,12 @@ namespace CraftingSolver
 
                 FocusedTouch,
                 PreparatoryTouch,
+                BasicTouch,
                 StandardTouch,
+                AdvancedTouch,
                 ByregotsBlessing,
                 PrudentTouch,
-                BasicTouch,
+                TrainedFinesse,
 
                 Manipulation,
                 MastersMend,
@@ -689,8 +691,8 @@ namespace CraftingSolver
                 TrainedEye,
                 Reflect
             };
-            public static Action[] ProgressActions = AllActions.Where(x => x.ProgressIncreaseMultiplier > 0).ToArray();
-            public static Action[] QualityActions = AllActions.Where(x => x.QualityIncreaseMultiplier > 0).ToArray();
+            public static Action[] ProgressActions = DependableActions.Where(x => x.ProgressIncreaseMultiplier > 0).ToArray();
+            public static Action[] QualityActions = DependableActions.Where(x => x.QualityIncreaseMultiplier > 0).Concat(new Action[] { TrainedEye }).ToArray();
             public static Action[] Buffs = new Action[]
             {
                 Observe,
@@ -703,12 +705,20 @@ namespace CraftingSolver
             };
             public static Action[] ProgressBuffs = new Action[]
             {
-                Veneration
+                Veneration,
+                //FinalAppraisal
             };
             public static Action[] QualityBuffs = new Action[]
             {
                 Innovation,
                 GreatStrides
+            };
+            public static Action[] DurabilityActions = new Action[]
+            {
+                Manipulation,
+                MastersMend,
+                WasteNot,
+                WasteNot2
             };
 
             public static void UpgradeActionsByLevel(int level)

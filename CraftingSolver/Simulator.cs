@@ -28,7 +28,7 @@ namespace CraftingSolver
             BaseQualityIncrease = CalculateBaseQualityIncrease();
         }
 
-        public State Simulate(List<Action> actions, State startState, bool assumeSuccess, bool verbose, bool debug)
+        public State Simulate(List<Action> actions, State startState, bool assumeSuccess = false, bool verbose = false, bool debug = false, bool useDurability = true)
         {
             State s = startState.Clone();
 
@@ -95,7 +95,7 @@ namespace CraftingSolver
                 }
                 else
                 {
-                    s.UpdateState(action, progressGain, qualityGain, r.DurabilityCost, r.CPCost, successProbability);
+                    s.UpdateState(action, progressGain, qualityGain, useDurability ? r.DurabilityCost : 0, r.CPCost, successProbability);
                     if (UseConditions)
                     {
                         ppPoor = ppExcellent;
@@ -129,9 +129,9 @@ namespace CraftingSolver
                 TrickUses = 0,
                 NameOfElementUses = 0,
                 Reliability = 1,
-                Indefinites = new List<Effect>(),
-                CountDowns = new List<Effect>(),
-                CountUps = new List<Effect>(),
+                Indefinites = new Dictionary<Action, int>(),
+                CountDowns = new Dictionary<Action, int>(),
+                CountUps = new Dictionary<Action, int>(),
                 Condition = new SimulatorCondition
                 {
                     ConditionQuality = ConditionQuality.Normal,
@@ -215,7 +215,7 @@ namespace CraftingSolver
 
             // Effects modifying durability cost
             double durabilityCost = action.DurabilityCost;
-            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.WasteNot) || x.Action.Equals(Atlas.Actions.WasteNot2)))
+            if (state.CountDowns.ContainsKey(Atlas.Actions.WasteNot) || state.CountDowns.ContainsKey(Atlas.Actions.WasteNot2))
             {
                 if (action.Equals(Atlas.Actions.PrudentTouch) || action.Equals(Atlas.Actions.PrudentSynthesis))
                 {
@@ -231,8 +231,8 @@ namespace CraftingSolver
 
             if (action.Equals(Atlas.Actions.TrainedFinesse))
             {
-                Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
-                if (iq == default || iq.Turns != 10)
+                state.CountUps.TryGetValue(Atlas.Actions.InnerQuiet, out int iq);
+                if (iq != 10)
                 {
                     state.WastedActions++;
                     state.WastedCounter["UntrainedFinesse"]++;
@@ -277,13 +277,12 @@ namespace CraftingSolver
         private double CalcProgressMultiplier(State state, Action action)
         {
             double progressIncreaseMultiplier = 1;
-            Effect muMe = state.CountDowns.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.MuscleMemory));
-            if (action.ProgressIncreaseMultiplier > 0 && muMe != default)
+            if (action.ProgressIncreaseMultiplier > 0 && state.CountDowns.ContainsKey(Atlas.Actions.MuscleMemory))
             {
                 progressIncreaseMultiplier++;
-                state.CountDowns.Remove(muMe);
+                state.CountDowns.Remove(Atlas.Actions.MuscleMemory);
             }
-            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Veneration)))
+            if (state.CountDowns.ContainsKey(Atlas.Actions.Veneration))
             {
                 progressIncreaseMultiplier += 0.5;
             }
@@ -296,21 +295,21 @@ namespace CraftingSolver
         private double CalcQualityMultiplier(State state, Action action)
         {
             double qualityIncreaseMultiplier = 1;
-            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.GreatStrides)) && qualityIncreaseMultiplier > 0)
+            if (state.CountDowns.ContainsKey(Atlas.Actions.GreatStrides) && qualityIncreaseMultiplier > 0)
             {
                 qualityIncreaseMultiplier += 1;
             }
-            if (state.CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Innovation)))
+            if (state.CountDowns.ContainsKey(Atlas.Actions.GreatStrides))
             {
                 qualityIncreaseMultiplier += 0.5;
             }
 
-            Effect iq = state.CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+            state.CountUps.TryGetValue(Atlas.Actions.InnerQuiet, out int iq);
             if (action.Equals(Atlas.Actions.ByregotsBlessing))
             {               
-                if (iq != default && iq.Turns > 0)
+                if (iq > 0)
                 {
-                    qualityIncreaseMultiplier *= Math.Min(3, 1 + iq.Turns * 0.2);
+                    qualityIncreaseMultiplier *= Math.Min(3, 1 + iq * 0.2);
                 }
                 else
                 {
@@ -319,7 +318,7 @@ namespace CraftingSolver
                     state.WastedCounter["BBWithoutIQ"]++;
                 }
             }
-            qualityIncreaseMultiplier *= 1 + (0.1 * iq?.Turns ?? 0);
+            qualityIncreaseMultiplier *= 1 + (0.1 * iq);
             return qualityIncreaseMultiplier;
         }
 

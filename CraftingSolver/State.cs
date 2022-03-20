@@ -20,9 +20,9 @@ namespace CraftingSolver
         public int NameOfElementUses { get; set; }
         public double Reliability { get; set; }
         public ICondition Condition { get; set; }
-        public List<Effect> CountUps { get; set; }
-        public List<Effect> CountDowns { get; set; }
-        public List<Effect> Indefinites { get; set; }
+        public Dictionary<Action, int> CountUps { get; set; }
+        public Dictionary<Action, int> CountDowns { get; set; }
+        public Dictionary<Action, int> Indefinites { get; set; }
 
         public int IQ { get; set; }
         public int Control { get; set; }
@@ -48,9 +48,9 @@ namespace CraftingSolver
 
         public State()
         {
-            CountDowns = new List<Effect>();
-            CountUps = new List<Effect>();
-            Indefinites = new List<Effect>();
+            CountDowns = new Dictionary<Action, int>();
+            CountUps = new Dictionary<Action, int>();
+            Indefinites = new Dictionary<Action, int>();
         }
 
         public State Clone()
@@ -70,9 +70,9 @@ namespace CraftingSolver
                 TrickUses = TrickUses,
                 NameOfElementUses = NameOfElementUses,
                 Reliability = Reliability,
-                CountUps = CountUps.Select(x => x).ToList(),
-                CountDowns = CountDowns.Select(x => x).ToList(),
-                Indefinites = Indefinites.Select(x => x).ToList(),
+                CountUps = CountUps.ToDictionary(x => x.Key, x => x.Value),
+                CountDowns = CountUps.ToDictionary(x => x.Key, x => x.Value),
+                Indefinites = CountUps.ToDictionary(x => x.Key, x => x.Value),
                 Condition = Condition,
 
                 IQ = IQ,
@@ -104,17 +104,17 @@ namespace CraftingSolver
                 Durability += 30;
             }
 
-            if (CountDowns.Any(x => x.Action.Equals(Atlas.Actions.Manipulation) && Durability > 0 && action != Atlas.Actions.Manipulation))
+            if (CountDowns.ContainsKey(Atlas.Actions.Manipulation) && Durability > 0 && action != Atlas.Actions.Manipulation)
             {
                 Durability += 5;
             }
 
             if (action.Equals(Atlas.Actions.ByregotsBlessing))
             {
-                Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+                CountUps.TryGetValue(Atlas.Actions.InnerQuiet, out int iq);
                 if (iq != default)
                 {
-                    CountUps.Remove(iq);
+                    CountUps.Remove(Atlas.Actions.InnerQuiet);
                 }
                 else
                 {
@@ -127,7 +127,7 @@ namespace CraftingSolver
             {
                 if (Step == 1)
                 {
-                    CountUps.Add(new Effect { Action = Atlas.Actions.InnerQuiet, Turns = 1 });
+                    CountUps.Add(Atlas.Actions.InnerQuiet, 1);
                 }
                 else
                 {
@@ -136,9 +136,9 @@ namespace CraftingSolver
                 }
             }
 
-            if (action.QualityIncreaseMultiplier > 0 && CountDowns.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.GreatStrides)) != default)
+            if (action.QualityIncreaseMultiplier > 0 && CountDowns.ContainsKey(Atlas.Actions.GreatStrides))
             {
-                CountDowns.RemoveAll(x => x.Action.Equals(Atlas.Actions.GreatStrides));
+                CountDowns.Remove(Atlas.Actions.GreatStrides);
             }
 
             if (action.OnExcellent || action.OnGood)
@@ -155,66 +155,62 @@ namespace CraftingSolver
 
         public void UpdateEffectCounters(Action action, double successProbability)
         {
-            foreach (Effect effect in CountDowns)
+            foreach (Action a in CountDowns.Keys.ToList())
             {
-                effect.Turns -= 1;
-            }
-            CountDowns.RemoveAll(x => x.Turns == 0);
-
-            Effect iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
-            if(iq==default && !action.Equals(Atlas.Actions.ByregotsBlessing) && Atlas.Actions.QualityActions.Contains(action))
-            {
-                CountUps.Add(new Effect
+                if (CountDowns[a]-- == 0)
                 {
-                    Action = Atlas.Actions.InnerQuiet,
-                    Turns = 0
-                });
-                iq = CountUps.FirstOrDefault(x => x.Action.Equals(Atlas.Actions.InnerQuiet));
+                    CountDowns.Remove(a);
+                }
             }
-            if (iq != default)
+
+            CountUps.TryGetValue(Atlas.Actions.InnerQuiet, out int iq);
+            if (iq > 0)
             {
+                if (!action.Equals(Atlas.Actions.ByregotsBlessing) && action.QualityIncreaseMultiplier > 0 && !CountUps.ContainsKey(Atlas.Actions.InnerQuiet))
+                {
+                    CountUps.Add(Atlas.Actions.InnerQuiet, 0);
+                }
+
                 // conditional IQ countups
                 if (action.Equals(Atlas.Actions.PreparatoryTouch))
                 {
-                    iq.Turns += 2;
+                    CountUps[Atlas.Actions.InnerQuiet] += 2;
                 }
                 else if (action.Equals(Atlas.Actions.PreciseTouch) && Condition.CheckGoodOrExcellent())
                 {
-                    iq.Turns += 2 * successProbability * Condition.PGoodOrExcellent();
+                    CountUps[Atlas.Actions.InnerQuiet] += (int)(2 * successProbability * Condition.PGoodOrExcellent());
                 }
                 else if (action.QualityIncreaseMultiplier > 0)
                 {
-                    iq.Turns += Convert.ToInt32(1 * successProbability);
+                    CountUps[Atlas.Actions.InnerQuiet] += Convert.ToInt32(1 * successProbability);
                 }
 
-                iq.Turns = Math.Min(iq.Turns, 10);
+                CountUps[Atlas.Actions.InnerQuiet] = Math.Min(CountUps[Atlas.Actions.InnerQuiet], 10);
             }
 
             switch (action.ActionType)
             {
                 case ActionType.CountUp:
-                    Effect countup = CountUps.FirstOrDefault(x => x.Action == action);
-                    if (countup == default)
+                    if (CountUps.ContainsKey(action))
                     {
-                        CountUps.Add(new Effect { Action = action, Turns = 0 });
+                        CountUps[action] = 0;
                     }
                     else
                     {
-                        countup.Turns = 0;
+                        CountUps.Add(action, 0);
                     }
                     break;
                 case ActionType.Indefinite:
-                    Indefinites.Add(new Effect { Action = action, Turns = 1 });
+                    Indefinites.Add(action, 1);
                     break;
                 case ActionType.CountDown:
-                    Effect countdown = CountDowns.FirstOrDefault(x => x.Action == action);
-                    if (countdown == default)
+                    if (CountDowns.ContainsKey(action))
                     {
-                        CountDowns.Add(new Effect { Action = action, Turns = action.ActiveTurns });
+                        CountDowns[action] = action.ActiveTurns;
                     }
                     else
                     {
-                        countdown.Turns = action.ActiveTurns;
+                        CountDowns.Add(action, action.ActiveTurns);
                     }
                     break;
                 case ActionType.Immediate:
@@ -258,18 +254,25 @@ namespace CraftingSolver
 
         public int BuffDuration(Action buff)
         {
-            switch (buff.ActionType)
+            try
             {
-                case ActionType.CountDown:
-                    return Convert.ToInt32(CountDowns.FirstOrDefault(x => x.Action.Equals(buff))?.Turns);
-                case ActionType.CountUp:
-                    return Convert.ToInt32(CountUps.FirstOrDefault(x => x.Action.Equals(buff))?.Turns);
-                case ActionType.Immediate:
-                    return Action.Equals(buff) ? 1 : 0;
-                case ActionType.Indefinite:
-                    return Convert.ToInt32(Indefinites.FirstOrDefault(x => x.Action.Equals(buff))?.Turns);
-                default:
-                    throw new Exception("Action Type not recognized");
+                switch (buff.ActionType)
+                {
+                    case ActionType.CountDown:
+                        return CountDowns[buff];
+                    case ActionType.CountUp:
+                        return CountUps[buff];
+                    case ActionType.Immediate:
+                        return Action.Equals(buff) ? 1 : 0;
+                    case ActionType.Indefinite:
+                        return Indefinites[buff];
+                    default:
+                        throw new Exception("Action Type not recognized");
+                }
+            }
+            catch
+            {
+                return 0;
             }
         }
     }
