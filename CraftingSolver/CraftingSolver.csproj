@@ -121,6 +121,7 @@
     </Compile>
     <Compile Include="Action.cs" />
     <Compile Include="Atlas.cs" />
+    <Compile Include="ActionTree.cs" />
     <Compile Include="ICondition.cs" />
     <Compile Include="Crafter.cs" />
     <Compile Include="Effect.cs" />

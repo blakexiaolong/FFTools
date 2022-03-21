@@ -198,6 +198,7 @@ namespace CraftingSolver
 
         public static Tuple<double, bool> ScoreState(Simulator sim, State state, bool ignoreProgress = false)
         {
+            if (state == null) return new Tuple<double, bool>(-1, false);
             if (!state.Success)
             {
                 var violations = state.CheckViolations();
@@ -1626,8 +1627,6 @@ namespace CraftingSolver
                 //var best = thingResults.OrderBy(x => x.Item1).LastOrDefault();
                 //Debug.WriteLine($"{best.Item1}  -  {string.Join(", ", best.Item2.Select(x => x.ShortName))}");
 
-
-
                 int cp = sim.Crafter.CP + (int)(sim.Recipe.Durability * maxDurabilityCost);
                 State startState = sim.Simulate(null, new State());
 
@@ -2027,8 +2026,9 @@ namespace CraftingSolver
                             .Where(x => checks.All(audit => true))
                             .Select(x =>
                             {
-                                State state = sim.Simulate(x, startState, useDurability: true);
+                                State state = LightSimulator.Simulate(sim, x, startState, useDurability: false);
                                 Tuple<double, bool> score = ScoreState(sim, state, ignoreProgress: qualityOnly);
+
                                 if (score.Item1 > 0)
                                 {
                                     return new Tuple<bool, double, List<Action>>(qualityOnly || state.CheckViolations().ProgressOk, score.Item1, x);

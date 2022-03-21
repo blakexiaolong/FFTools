@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace CraftingSolver
@@ -77,7 +76,6 @@ namespace CraftingSolver
                     s.WastedActions++;
                     s.WastedCounter["NonDummyAfterDummy"]++;
                 }
-
                 if (s.Progress >= Recipe.Difficulty && !action.Equals(Atlas.Actions.DummyAction))
                 {
                     s.WastedActions++;
@@ -299,7 +297,7 @@ namespace CraftingSolver
             {
                 qualityIncreaseMultiplier += 1;
             }
-            if (state.CountDowns.ContainsKey(Atlas.Actions.GreatStrides))
+            if (state.CountDowns.ContainsKey(Atlas.Actions.Innovation))
             {
                 qualityIncreaseMultiplier += 0.5;
             }
