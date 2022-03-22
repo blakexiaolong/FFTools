@@ -2,13 +2,31 @@
 
 namespace CraftingSolver
 {
-    internal class ActionTree
+    public class ActionNode
     {
-        Dictionary<int, ActionNode> Children { get; set; }
+        public Action Action { get; set; }
+        public Dictionary<int, ActionNode> Children { get; set; }
+        public ActionNode Parent { get; set; }
+        public bool Failed { get; set; }
 
-        public ActionTree()
+        public ActionNode(Action action, ActionNode parent)
         {
+            Action = action;
             Children = new Dictionary<int, ActionNode>();
+            Parent = parent;
+            Failed = false;
+        }
+        public bool Add(Action action)
+        {
+            if (Children.ContainsKey(action.ID))
+            {
+                return !Children[action.ID].Failed;
+            }
+            else
+            {
+                Children.Add(action.ID, new ActionNode(action, this));
+            }
+            return true;
         }
         public bool Add(List<Action> actions)
         {
@@ -27,11 +45,11 @@ namespace CraftingSolver
                     }
                     head = Children[actions[i].ID];
                 }
-                if (i == actions.Count - 1)
+                else if (i == actions.Count - 1)
                 {
                     if (head.Children.ContainsKey(actions[i].ID))
                     {
-                        return false;
+                        return !head.Children[actions[i].ID].Failed;
                     }
                     else
                     {
@@ -42,7 +60,7 @@ namespace CraftingSolver
                 {
                     if (head.Children.ContainsKey(actions[i].ID))
                     {
-                        if (Children[actions[i].ID].Failed) return false;
+                        if (head.Children[actions[i].ID].Failed) return false;
                     }
                     else
                     {
@@ -53,25 +71,10 @@ namespace CraftingSolver
             }
             return true;
         }
-    }
-    internal class ActionNode
-    {
-        public Action Action { get; set; }
-        public Dictionary<int, ActionNode> Children { get; set; }
-        public ActionNode Parent { get; set; }
-        public bool Failed { get; set; }
-
-        public ActionNode(Action action, ActionNode parent)
-        {
-            Action = action;
-            Children = new Dictionary<int, ActionNode>();
-            Parent = parent;
-            Failed = false;
-        }
         public List<Action> GetPath()
         {
-            List<Action> path = new List<Action>() { Action };
-            ActionNode head = Parent;
+            List<Action> path = new List<Action>();
+            ActionNode head = this;
             while (head.Parent != null)
             {
                 path.Insert(0, head.Action);
